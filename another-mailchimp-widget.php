@@ -1,10 +1,10 @@
 <?php
 /**
  * Plugin Name: Another MailChimp Widget
- * Plugin URI: https://motopress.com/
+ * Plugin URI: https://motopress.com/products/another-mailchimp-widget/
  * Description: Simple MailChimp subscription form to your lists and groups.
  * Author: MotoPress
- * Version: 2.0.7
+ * Version: 2.0.8
  * Author URI: https://motopress.com/
  * License: GPL2
  * Text Domain: another-mailchimp-widget
