@@ -4,7 +4,7 @@
  * Plugin URI: https://motopress.com/products/another-mailchimp-widget/
  * Description: Simple MailChimp subscription form to your lists and groups.
  * Author: MotoPress
- * Version: 2.0.8
+ * Version: 2.0.9
  * Author URI: https://motopress.com/
  * License: GPL2
  * Text Domain: another-mailchimp-widget
@@ -163,7 +163,7 @@ class Another_mailChimp_widget {
 		try {
 			set_include_path( get_include_path() . PATH_SEPARATOR . realpath( $this::get_plugin_dir() . '/lib/' ) );
 			spl_autoload( $class, '.class.php' );
-			restore_include_path();
+			ini_restore('include_path');
 		} catch ( Exception $e ) {
 			$message = $e->getMessage();
 			
