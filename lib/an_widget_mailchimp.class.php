@@ -16,14 +16,14 @@ class AN_Widget_MailChimp extends Widget_Default_AN_MC {
 	 * AN_Widget_MailChimp constructor.
 	 */
 	public function __construct() {
-		$this->default_failure_message = __( 'There was a problem processing your submission.', 'another-mailchimp-widget' );
-		$this->default_signup_text     = __( 'Subscribe', 'another-mailchimp-widget' );
-		$this->default_success_message = __( 'Thank you for joining our mailing list.', 'another-mailchimp-widget' );
+		$this->default_failure_message = esc_html__( 'There was a problem processing your submission.', 'another-mailchimp-widget' );
+		$this->default_signup_text     = esc_html__( 'Subscribe', 'another-mailchimp-widget' );
+		$this->default_success_message = esc_html__( 'Thank you for joining our mailing list.', 'another-mailchimp-widget' );
 		
 		$this->setPrefix( 'an' );
 		$this->setClassName( 'widget_an_mailchimp' );
-		$this->setName( __( 'Another Mailchimp Widget', 'another-mailchimp-widget' ) );
-		$this->setDescription( __( 'Displays a sign-up form for a MailChimp mailing list.', 'another-mailchimp-widget' ) );
+		$this->setName( esc_html__( 'Another Mailchimp Widget', 'another-mailchimp-widget' ) );
+		$this->setDescription( esc_html__( 'Displays a sign-up form for a MailChimp mailing list.', 'another-mailchimp-widget' ) );
 		$this->setIdSuffix( 'mailchimp' );
 		$this->an_mc_plugin = AN_MC_Plugin::get_instance();
 		
@@ -51,26 +51,24 @@ class AN_Widget_MailChimp extends Widget_Default_AN_MC {
 			'failure_message' => $this->default_failure_message,
 			'signup_text'     => $this->default_signup_text,
 			'success_message' => $this->default_success_message,
-			'first_name_text' => __( 'First Name', 'another-mailchimp-widget' ),
-			'last_name_text'  => __( 'Last Name', 'another-mailchimp-widget' ),
-			'email_text'      => __( 'Your E-mail', 'another-mailchimp-widget' ),
+			'first_name_text' => esc_html__( 'First Name', 'another-mailchimp-widget' ),
+			'last_name_text'  => esc_html__( 'Last Name', 'another-mailchimp-widget' ),
+			'email_text'      => esc_html__( 'Your E-mail', 'another-mailchimp-widget' ),
 			'collect_first'   => false,
 			'collect_last'    => false,
 			'old_markup'      => false,
 			'showplaceholder' => true,
 		);
-		
+
 		extract( wp_parse_args( $instance, $defaults ) );
 		extract( $args );
-		
-		echo $before_widget;
-		
-		$title = empty( $instance[ 'title' ] ) ? '' : $before_title . $instance[ 'title' ] . $after_title;
-		
-		echo $title;
-		
+
+		echo $before_widget; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+
+		echo empty( $instance[ 'title' ] ) ? '' : $before_title . esc_html( $instance[ 'title' ] ) . $after_title; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+
 		if ( $this->successful_signup ) {
-			echo $this->signup_success_message;
+			echo wp_kses_post( $this->signup_success_message );
 		} elseif ( ! $api_key ) {
 			AN_MC_View::get_instance()->get_template( '/notice/change-settings' );
 		} elseif ( empty( $instance[ 'current_mailing_list' ] ) ) {
@@ -78,14 +76,14 @@ class AN_Widget_MailChimp extends Widget_Default_AN_MC {
 		} else {
 			$data = array(
 				'id'  => $this->id_base . '_form-' . $this->number,
-				'url' => $_SERVER[ 'REQUEST_URI' ]
+				'url' => sanitize_text_field( wp_unslash( $_SERVER[ 'REQUEST_URI' ] ) )
 			)
 			?>
-			<form action="<?php echo $_SERVER[ 'REQUEST_URI' ]; ?>"
-			      data-id="<?php echo $data[ 'id' ] ?>"
-			      data-url="<?php echo $data[ 'url' ] ?>"
+			<form action="<?php echo esc_url( sanitize_text_field( wp_unslash( $_SERVER[ 'REQUEST_URI' ] ) ) ); ?>"
+			      data-id="<?php echo esc_attr( $data[ 'id' ] ); ?>"
+			      data-url="<?php echo esc_url( $data[ 'url' ] ); ?>"
 
-			      id="<?php echo $data[ 'id' ] ?>" method="post" class="<?php
+			      id="<?php echo esc_attr( $data[ 'id' ] ); ?>" method="post" class="<?php
 			if ( $showplaceholder ) {
 				echo 'mailchimp_form_placeholder ';
 			}
@@ -93,18 +91,18 @@ class AN_Widget_MailChimp extends Widget_Default_AN_MC {
 				echo 'mailchimp_form_simple';
 			}
 			?>">
-				<?php echo $this->subscribe_errors;
+				<?php echo wp_kses_post( $this->subscribe_errors );
 				if ( $collect_first ) { ?>
 					<?php if ( $showplaceholder ) { ?>
 						<p>
 							<label>
-								<input placeholder="<?php echo $first_name_text ?>" type="text" id="<?php echo $this->id_base . '_first_name'; ?>" required name="<?php echo $this->id_base . '_first_name'; ?>"/>
+								<input placeholder="<?php echo esc_attr( $first_name_text ); ?>" type="text" id="<?php echo esc_attr( $this->id_base . '_first_name' ); ?>" required name="<?php echo esc_attr( $this->id_base . '_first_name' ); ?>"/>
 							</label>
 						</p>
 					<?php } else { ?>
 						<p>
-							<label for="<?php echo $this->id_base . '_first_name' . $this->number; ?>"><?php echo $first_name_text ?></label>
-							<input type="text" id="<?php echo $this->id_base . '_first_name' . $this->number; ?>" required name="<?php echo $this->id_base . '_first_name'; ?>"/>
+							<label for="<?php echo esc_attr( $this->id_base . '_first_name' . $this->number ); ?>"><?php echo esc_html( $first_name_text ); ?></label>
+							<input type="text" id="<?php echo esc_attr( $this->id_base . '_first_name' . $this->number ); ?>" required name="<?php echo esc_attr( $this->id_base . '_first_name' ); ?>"/>
 						</p>
 						<?php
 					}
@@ -113,42 +111,42 @@ class AN_Widget_MailChimp extends Widget_Default_AN_MC {
 					if ( $showplaceholder ) { ?>
 						<p>
 							<label>
-								<input placeholder="<?php echo $last_name_text ?>" type="text" id="<?php echo $this->id_base . '_last_name'; ?>" required name="<?php echo $this->id_base . '_last_name'; ?>"/>
+								<input placeholder="<?php echo esc_attr( $last_name_text ); ?>" type="text" id="<?php echo esc_attr( $this->id_base . '_last_name' ); ?>" required name="<?php echo esc_attr( $this->id_base . '_last_name' ); ?>"/>
 							</label>
 						</p>
 					<?php } else { ?>
 						<p>
-							<label for="<?php echo $this->id_base . '_last_name' . $this->number; ?>"><?php echo $last_name_text ?></label>
-							<input type="text" id="<?php echo $this->id_base . '_last_name' . $this->number; ?>" required name="<?php echo $this->id_base . '_last_name'; ?>"/>
+							<label for="<?php echo esc_attr( $this->id_base . '_last_name' . $this->number ); ?>"><?php echo esc_html( $last_name_text ); ?></label>
+							<input type="text" id="<?php echo esc_attr( $this->id_base . '_last_name' . $this->number ); ?>" required name="<?php echo esc_attr( $this->id_base . '_last_name' ); ?>"/>
 						</p>
 						<?php
 					}
 				} ?>
-				<input type="hidden" name="widget_error" value="<?php echo $failure_message ?>"/>
-				<input type="hidden" name="widget_success" value="<?php echo $success_message ?>"/>
-				<input type="hidden" name="widget_id" value="<?php echo $this->id_base; ?>"/>
-				<input type="hidden" name="widget_number" value="<?php echo $this->number; ?>"/>
+				<input type="hidden" name="widget_error" value="<?php echo esc_attr( $failure_message ); ?>"/>
+				<input type="hidden" name="widget_success" value="<?php echo esc_attr( $success_message ); ?>"/>
+				<input type="hidden" name="widget_id" value="<?php echo esc_attr( $this->id_base ); ?>"/>
+				<input type="hidden" name="widget_number" value="<?php echo esc_attr( $this->number ); ?>"/>
 				<input type="hidden" name="mp_am_type" value="widget"/>
 				<?php if ( $showplaceholder ) { ?>
 					<p>
 						<label>
-							<input placeholder="<?php echo $email_text ?>" id="<?php echo $this->id_base . '-email-' . $this->number; ?>" type="email" required name="<?php echo $this->id_base . '_email' ?>"/>
+							<input placeholder="<?php echo esc_attr( $email_text ); ?>" id="<?php echo esc_attr( $this->id_base . '-email-' . $this->number ); ?>" type="email" required name="<?php echo esc_attr( $this->id_base . '_email' ); ?>"/>
 						</label>
 					</p>
 				<?php } else { ?>
 					<p>
-						<label for="<?php echo $this->id_base . '-email-' . $this->number; ?>"><?php echo $email_text ?></label>
-						<input required id="<?php echo $this->id_base . '-email-' . $this->number; ?>" type="email" name="<?php echo $this->id_base . '_email' ?>"/>
+						<label for="<?php echo esc_attr( $this->id_base . '-email-' . $this->number ); ?>"><?php echo esc_html( $email_text ); ?></label>
+						<input required id="<?php echo esc_attr( $this->id_base . '-email-' . $this->number ); ?>" type="email" name="<?php echo esc_attr( $this->id_base . '_email' ); ?>"/>
 					</p>
 				<?php } ?>
 				<p>
-					<input class="mpam-submit button" type="submit" name="<?php echo strtolower( $signup_text ); ?>" value="<?php echo $signup_text; ?>"/>
+					<input class="mpam-submit button" type="submit" name="<?php echo esc_attr( strtolower( $signup_text ) ); ?>" value="<?php echo esc_attr( $signup_text ); ?>"/>
 				</p>
 			</form>
 		
 		<?php }
 		
-		echo $after_widget;
+		echo $after_widget; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 	}
 	
 	/**
@@ -162,7 +160,7 @@ class AN_Widget_MailChimp extends Widget_Default_AN_MC {
 		$api_key = AN_MC_Plugin::get_instance()->is_have_api_key();
 		
 		if ( ! $api_key ) {
-			echo AN_MC_View::get_instance()->get_template_html( '/notice/invalid-api-key' );
+			echo AN_MC_View::get_instance()->get_template_html( '/notice/invalid-api-key' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		} else {
 			
 			$mcapi       = $this->an_mc_plugin->get_mcapi();
@@ -170,9 +168,9 @@ class AN_Widget_MailChimp extends Widget_Default_AN_MC {
 			$defaults    = array(
 				'failure_message'      => $this->default_failure_message,
 				'signup_text'          => $this->default_signup_text,
-				'first_name_text'      => __( 'First Name', 'another-mailchimp-widget' ),
-				'last_name_text'       => __( 'Last Name', 'another-mailchimp-widget' ),
-				'email_text'           => __( 'Your E-mail', 'another-mailchimp-widget' ),
+				'first_name_text'      => esc_html__( 'First Name', 'another-mailchimp-widget' ),
+				'last_name_text'       => esc_html__( 'Last Name', 'another-mailchimp-widget' ),
+				'email_text'           => esc_html__( 'Your E-mail', 'another-mailchimp-widget' ),
 				'success_message'      => $this->default_success_message,
 				'collect_first'        => false,
 				'collect_last'         => false,
@@ -196,54 +194,54 @@ class AN_Widget_MailChimp extends Widget_Default_AN_MC {
 					}
 				</style>
 				<p>
-					<label for="<?php echo $this->get_field_id( 'title' ); ?>"><?php _e( 'Title', 'another-mailchimp-widget' ); ?></label>
-					<input class="widefat" id="<?php echo $this->get_field_id( 'title' ); ?>" name="<?php echo $this->get_field_name( 'title' ); ?>" type="text" value="<?php echo $title; ?>"/>
+					<label for="<?php echo esc_attr( $this->get_field_id( 'title' ) ); ?>"><?php esc_html_e( 'Title', 'another-mailchimp-widget' ); ?></label>
+					<input class="widefat" id="<?php echo esc_attr( $this->get_field_id( 'title' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'title' ) ); ?>" type="text" value="<?php echo esc_attr( $title ); ?>"/>
 				</p>
 				<?php if ( ! is_array( $this->lists ) ) { ?>
-					<p><?php _e( 'You need to configure MailChimp settings first.', 'another-mailchimp-widget' ) ?></p>
+					<p><?php esc_html_e( 'You need to configure MailChimp settings first.', 'another-mailchimp-widget' ) ?></p>
 				<?php } ?>
 				<p>
-					<label for="<?php echo $this->get_field_id( 'current_mailing_list' ); ?>"><?php _e( 'Select lists and groups your users will be signed up to', 'another-mailchimp-widget' ); ?></label>
-					<select multiple class="widefat" style="min-height: 150px" size="10" id="<?php echo $this->get_field_id( 'current_mailing_list' ); ?>" name="<?php echo $this->get_field_name( 'current_mailing_list' ) . '[]'; ?>">
+					<label for="<?php echo esc_attr( $this->get_field_id( 'current_mailing_list' ) ); ?>"><?php esc_html_e( 'Select lists and groups your users will be signed up to', 'another-mailchimp-widget' ); ?></label>
+					<select multiple class="widefat" style="min-height: 150px" size="10" id="<?php echo esc_attr( $this->get_field_id( 'current_mailing_list' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'current_mailing_list' ) . '[]' ); ?>">
 						<?php AN_MC_View::get_instance()->get_template( 'mailchimp-lists', array( 'lists' => $this->lists, 'current_mailing_list' => $current_mailing_list ) ); ?>
 					</select>
-					<?php _e( 'Use ctrl/cmd key to select multiple options.', 'another-mailchimp-widget' ); ?>
+					<?php esc_html_e( 'Use ctrl/cmd key to select multiple options.', 'another-mailchimp-widget' ); ?>
 				</p>
 				<p>
-					<label for="<?php echo $this->get_field_id( 'email_text' ); ?>"><?php _e( 'Email label', 'another-mailchimp-widget' ); ?></label>
-					<input class="widefat" type="text" id="<?php echo $this->get_field_id( 'email_text' ); ?>" name="<?php echo $this->get_field_name( 'email_text' ); ?>" value="<?php echo $email_text; ?>"/>
+					<label for="<?php echo esc_attr( $this->get_field_id( 'email_text' ) ); ?>"><?php esc_html_e( 'Email label', 'another-mailchimp-widget' ); ?></label>
+					<input class="widefat" type="text" id="<?php echo esc_attr( $this->get_field_id( 'email_text' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'email_text' ) ); ?>" value="<?php echo esc_attr( $email_text ); ?>"/>
 				</p>
 				<p>
-					<label for="<?php echo $this->get_field_id( 'signup_text' ); ?>"><?php _e( 'Submit button label', 'another-mailchimp-widget' ); ?></label>
-					<input class="widefat" type="text" id="<?php echo $this->get_field_id( 'signup_text' ); ?>" name="<?php echo $this->get_field_name( 'signup_text' ); ?>" value="<?php echo $signup_text; ?>"/>
+					<label for="<?php echo esc_attr( $this->get_field_id( 'signup_text' ) ); ?>"><?php esc_html_e( 'Submit button label', 'another-mailchimp-widget' ); ?></label>
+					<input class="widefat" type="text" id="<?php echo esc_attr( $this->get_field_id( 'signup_text' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'signup_text' ) ); ?>" value="<?php echo esc_attr( $signup_text ); ?>"/>
 				</p>
 				<p>
-					<input type="checkbox" class="checkbox" id="<?php echo $this->get_field_id( 'collect_first' ); ?>" name="<?php echo $this->get_field_name( 'collect_first' ); ?>" <?php echo checked( $collect_first, true, false ); ?> />
-					<label for="<?php echo $this->get_field_id( 'collect_first' ); ?>"><?php _e( 'Collect first name', 'another-mailchimp-widget' ); ?></label>
+					<input type="checkbox" class="checkbox" id="<?php echo esc_attr( $this->get_field_id( 'collect_first' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'collect_first' ) ); ?>" <?php echo checked( $collect_first, true, false ); ?> />
+					<label for="<?php echo esc_attr( $this->get_field_id( 'collect_first' ) ); ?>"><?php esc_html_e( 'Collect first name', 'another-mailchimp-widget' ); ?></label>
 				</p>
 				<p>
-					<label for="<?php echo $this->get_field_id( 'first_name_text' ); ?>"><?php _e( 'First name label', 'another-mailchimp-widget' ); ?></label>
-					<input class="widefat" type="text" id="<?php echo $this->get_field_id( 'first_name_text' ); ?>" name="<?php echo $this->get_field_name( 'first_name_text' ); ?>" value="<?php echo $first_name_text; ?>"/>
+					<label for="<?php echo esc_attr( $this->get_field_id( 'first_name_text' ) ); ?>"><?php esc_html_e( 'First name label', 'another-mailchimp-widget' ); ?></label>
+					<input class="widefat" type="text" id="<?php echo esc_attr( $this->get_field_id( 'first_name_text' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'first_name_text' ) ); ?>" value="<?php echo esc_attr( $first_name_text ); ?>"/>
 				</p>
 				<p>
-					<input type="checkbox" class="checkbox" id="<?php echo $this->get_field_id( 'collect_last' ); ?>" name="<?php echo $this->get_field_name( 'collect_last' ); ?>" <?php echo checked( $collect_last, true, false ); ?> />
-					<label for="<?php echo $this->get_field_id( 'collect_last' ); ?>"><?php _e( 'Collect last name', 'another-mailchimp-widget' ); ?></label>
+					<input type="checkbox" class="checkbox" id="<?php echo esc_attr( $this->get_field_id( 'collect_last' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'collect_last' ) ); ?>" <?php echo checked( $collect_last, true, false ); ?> />
+					<label for="<?php echo esc_attr( $this->get_field_id( 'collect_last' ) ); ?>"><?php esc_html_e( 'Collect last name', 'another-mailchimp-widget' ); ?></label>
 				</p>
 				<p>
-					<label for="<?php echo $this->get_field_id( 'last_name_text' ); ?>"><?php _e( 'Last name label', 'another-mailchimp-widget' ); ?></label>
-					<input class="widefat" type="text" id="<?php echo $this->get_field_id( 'last_name_text' ); ?>" name="<?php echo $this->get_field_name( 'last_name_text' ); ?>" value="<?php echo $last_name_text; ?>"/>
+					<label for="<?php echo esc_attr( $this->get_field_id( 'last_name_text' ) ); ?>"><?php esc_html_e( 'Last name label', 'another-mailchimp-widget' ); ?></label>
+					<input class="widefat" type="text" id="<?php echo esc_attr( $this->get_field_id( 'last_name_text' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'last_name_text' ) ); ?>" value="<?php echo esc_attr( $last_name_text ); ?>"/>
 				</p>
 				<p>
-					<input type="checkbox" class="checkbox" id="<?php echo $this->get_field_id( 'showplaceholder' ); ?>" name="<?php echo $this->get_field_name( 'showplaceholder' ); ?>" <?php echo checked( $showplaceholder, true, false ); ?> />
-					<label for="<?php echo $this->get_field_id( 'showplaceholder' ); ?>"><?php _e( 'Display labels as placeholders', 'another-mailchimp-widget' ); ?></label>
+					<input type="checkbox" class="checkbox" id="<?php echo esc_attr( $this->get_field_id( 'showplaceholder' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'showplaceholder' ) ); ?>" <?php echo checked( $showplaceholder, true, false ); ?> />
+					<label for="<?php echo esc_attr( $this->get_field_id( 'showplaceholder' ) ); ?>"><?php esc_html_e( 'Display labels as placeholders', 'another-mailchimp-widget' ); ?></label>
 				</p>
 				<p>
-					<label for="<?php echo $this->get_field_id( 'success_message' ); ?>"><?php _e( 'Success message', 'another-mailchimp-widget' ); ?></label>
-					<textarea type="text" class="widefat" id="<?php echo $this->get_field_id( 'success_message' ); ?>" name="<?php echo $this->get_field_name( 'success_message' ); ?>"><?php echo $success_message; ?></textarea>
+					<label for="<?php echo esc_attr( $this->get_field_id( 'success_message' ) ); ?>"><?php esc_html_e( 'Success message', 'another-mailchimp-widget' ); ?></label>
+					<textarea type="text" class="widefat" id="<?php echo esc_attr( $this->get_field_id( 'success_message' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'success_message' ) ); ?>"><?php echo esc_textarea( $success_message) ; ?></textarea>
 				</p>
 				<p>
-					<label for="<?php echo $this->get_field_id( 'failure_message' ); ?>"><?php _e( 'Failure message', 'another-mailchimp-widget' ); ?></label>
-					<textarea type="text" class="widefat" id="<?php echo $this->get_field_id( 'failure_message' ); ?>" name="<?php echo $this->get_field_name( 'failure_message' ); ?>"><?php echo $failure_message; ?></textarea>
+					<label for="<?php echo esc_attr( $this->get_field_id( 'failure_message' ) ); ?>"><?php esc_html_e( 'Failure message', 'another-mailchimp-widget' ); ?></label>
+					<textarea type="text" class="widefat" id="<?php echo esc_attr( $this->get_field_id( 'failure_message' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'failure_message' ) ); ?>"><?php echo esc_textarea( $failure_message ); ?></textarea>
 				</p>
 			</div>
 			<?php
@@ -283,8 +281,13 @@ class AN_Widget_MailChimp extends Widget_Default_AN_MC {
 		$data[ 'widget_success' ]         = filter_input( $type, 'widget_success' );
 		$data[ 'widget_mailing_list_id' ] = $this->get_request_mailing_list( $type, $data[ 'submission_type' ], $data[ 'widget_number' ] );
 		
-		$errorMessage   = ( isset( $_GET[ 'widget_error' ] ) && ! empty( $_GET[ 'widget_error' ] ) ) ? $_GET[ 'widget_error' ] : __( 'There was a problem processing your submission.', 'another-mailchimp-widget' );
-		$successMessage = ( isset( $_GET[ 'widget_success' ] ) && ! empty( $_GET[ 'widget_success' ] ) ) ? $_GET[ 'widget_success' ] : __( 'Thank you for joining our mailing list.', 'another-mailchimp-widget' );
+		$errorMessage   = ( isset( $_GET[ 'widget_error' ] ) && ! empty( $_GET[ 'widget_error' ] ) ) ?
+			sanitize_text_field( wp_unslash( $_GET[ 'widget_error' ] ) ) :
+			esc_html__( 'There was a problem processing your submission.', 'another-mailchimp-widget' );
+
+		$successMessage = ( isset( $_GET[ 'widget_success' ] ) && ! empty( $_GET[ 'widget_success' ] ) ) ?
+			sanitize_text_field( wp_unslash( $_GET[ 'widget_success' ] ) ) :
+			esc_html__( 'Thank you for joining our mailing list.', 'another-mailchimp-widget' );
 		
 		if ( $data[ 'widgetId' ] ) {
 			header( "Content-Type: application/json" );
@@ -332,7 +335,7 @@ class AN_Widget_MailChimp extends Widget_Default_AN_MC {
 				}
 			}
 			
-			exit( $response );
+			exit( $response ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		}
 	}
 	

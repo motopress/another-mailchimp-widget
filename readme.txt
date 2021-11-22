@@ -3,8 +3,8 @@ Contributors: jameslafferty, MotoPress
 Donate link: https://motopress.com/
 Tags: newsletter, mailchimp, mailchimp widget, mailchimp subscribe, mailchimp shortcode
 Requires at least: 3.8
-Tested up to: 5.6
-Stable tag: trunk
+Tested up to: 5.8
+Stable tag: 2.1.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -41,10 +41,15 @@ Based on [jameslafferty](https://profiles.wordpress.org/jameslafferty/) ["MailCh
 == Screenshots ==
 
 1. Example of subscription forms.
+1. Widget settings.
+1. Shortcode settings.
 
 == Frequently Asked Questions ==
 
 == Changelog ==
+
+= 2.1.0, Nov 23 2021 =
+* Security - sanitization and escaping.
 
 = 2.0.9, Apr 25 2020 =
 * Improved compatibility with PHP 7.4.

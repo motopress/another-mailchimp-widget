@@ -16,15 +16,15 @@ function an_shortcode_mailchimp_function( $params, $content = null ) {
 	
 	extract( shortcode_atts( array(
 		'list'            => '',
-		'button'          => __( 'Subscribe', 'another-mailchimp-widget' ),
-		'first_name_text' => __( 'First Name', 'another-mailchimp-widget' ),
-		'last_name_text'  => __( 'Last Name', 'another-mailchimp-widget' ),
-		'email_text'      => __( 'Your E-mail', 'another-mailchimp-widget' ),
+		'button'          => esc_html__( 'Subscribe', 'another-mailchimp-widget' ),
+		'first_name_text' => esc_html__( 'First Name', 'another-mailchimp-widget' ),
+		'last_name_text'  => esc_html__( 'Last Name', 'another-mailchimp-widget' ),
+		'email_text'      => esc_html__( 'Your E-mail', 'another-mailchimp-widget' ),
 		'placeholder'     => true,
 		'firstname'       => false,
 		'lastname'        => false,
-		'success'         => __( 'Thank you for joining our mailing list.', 'another-mailchimp-widget' ),
-		'failure'         => __( 'There was a problem processing your submission.', 'another-mailchimp-widget' )
+		'success'         => esc_html__( 'Thank you for joining our mailing list.', 'another-mailchimp-widget' ),
+		'failure'         => esc_html__( 'There was a problem processing your submission.', 'another-mailchimp-widget' )
 	), $params ) );
 	
 	ob_start();

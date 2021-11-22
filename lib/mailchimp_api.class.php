@@ -159,7 +159,7 @@ class MailChimp_API {
 			$this->errorMessage = $content = $request->get_error_message();
 		} else {
 			$content            = json_decode( $request[ 'body' ], true );
-			$this->errorMessage = $content = ( isset( $content[ 'detail' ] ) ) ? $content[ 'detail' ] : __( 'Data format error.', 'another-mailchimp-widget' );
+			$this->errorMessage = $content = ( isset( $content[ 'detail' ] ) ) ? $content[ 'detail' ] : esc_html__( 'Data format error.', 'another-mailchimp-widget' );
 		}
 		
 		return array( 'error' => $content );
@@ -242,14 +242,14 @@ class MailChimp_API {
 	 * @return mixed|string
 	 */
 	public function get_response_message() {
-		$default_message = __( 'Invalid MailChimp API key', 'another-mailchimp-widget' );
+		$default_message = esc_html__( 'Invalid MailChimp API key', 'another-mailchimp-widget' );
 		
 		$messages = array(
-			'104' => __( 'Invalid MailChimp API key', 'another-mailchimp-widget' ),
-			'106' => __( 'Invalid MailChimp API key', 'another-mailchimp-widget' ),
+			'104' => esc_html__( 'Invalid MailChimp API key', 'another-mailchimp-widget' ),
+			'106' => esc_html__( 'Invalid MailChimp API key', 'another-mailchimp-widget' ),
 			'401' => $this->errorMessage,
 			'403' => $this->errorMessage,
-			'503' => __( 'Invalid MailChimp API key', 'another-mailchimp-widget' ),
+			'503' => esc_html__( 'Invalid MailChimp API key', 'another-mailchimp-widget' ),
 		
 		);
 		
@@ -321,7 +321,7 @@ class MailChimp_API {
 					$body[ $key ][ 'response' ] = $response_item->get_error_message();
 					$body[ $key ][ 'body' ]     = $response_item->get_error_code();
 				} else {
-					$body[ $key ][ 'response' ] = isset( $response_item[ 'response' ] ) ? $response_item[ 'response' ] : __( 'Unable to subscribe user.', 'another-mailchimp-widget' );
+					$body[ $key ][ 'response' ] = isset( $response_item[ 'response' ] ) ? $response_item[ 'response' ] : esc_html__( 'Unable to subscribe user.', 'another-mailchimp-widget' );
 					$body[ $key ][ 'body' ]     = isset( $response_item[ 'body' ] ) ? $response_item[ 'body' ] : '';
 				}
 			}
