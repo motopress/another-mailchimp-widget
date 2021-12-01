@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name: Another MailChimp Widget
+ * Plugin Name: Another Mailchimp Widget
  * Plugin URI: https://motopress.com/products/another-mailchimp-widget/
- * Description: Simple MailChimp subscription form to your lists and groups.
+ * Description: Simple Mailchimp subscription form to your lists and groups.
  * Author: MotoPress
  * Version: 2.1.0
  * Author URI: https://motopress.com/
@@ -10,6 +10,10 @@
  * Text Domain: another-mailchimp-widget
  * Domain Path: /languages
  */
+
+if ( ! defined( 'AN_MC_PLUGIN_VERSION' ) ) {
+	define( 'AN_MC_PLUGIN_VERSION', '2.1.0' );
+}
 
 if ( ! defined( 'AN_MC_PLUGIN_FILE' ) ) {
 	define( 'AN_MC_PLUGIN_FILE', __FILE__ );

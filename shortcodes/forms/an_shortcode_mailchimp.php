@@ -1,17 +1,16 @@
 <?php
-$an_mc_file = dirname( __FILE__ );
-$an_mc_file = substr( $an_mc_file, 0, stripos( $an_mc_file, "wp-content" ) );
-require( $an_mc_file . "/wp-load.php" );
-
-$an_mc_plugin_url = Another_mailChimp_widget::get_instance()->get_plugin_url();
 
 $an_mc_plugin = AN_MC_Plugin::get_instance();
 $an_mc_api_key      = $an_mc_plugin->is_have_api_key();
 $an_mc_lists        = array();
+
 if ( $an_mc_api_key ) {
 	$an_mc_mcapi = $an_mc_plugin->get_mcapi();
 	$an_mc_lists = $an_mc_mcapi->get_account_subscribe_lists();
 }
+
+$includes_url = includes_url();
+$an_mc_plugin_url = Another_mailChimp_widget::get_instance()->get_plugin_url();
 
 ?>
 <!doctype html>
@@ -19,11 +18,9 @@ if ( $an_mc_api_key ) {
 <head>
 	<title><?php esc_html_e( 'Insert Mailchimp Subscription Form', 'another-mailchimp-widget' ); ?></title>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-	<link rel='stylesheet' id='mp-am-tinymce-dialog' href='<?php echo esc_url( includes_url() ); ?>js/tinymce/plugins/compat3x/css/dialog.css' type='text/css' media='all'/>
-	<script language="javascript" type="text/javascript" src="<?php echo esc_url( includes_url() ); ?>/js/tinymce/tiny_mce_popup.js"></script>
-	<script language="javascript" type="text/javascript" src="<?php echo esc_url( includes_url() ); ?>/js/tinymce/utils/mctabs.js"></script>
-	<script language="javascript" type="text/javascript" src="<?php echo esc_url( includes_url() ); ?>/js/tinymce/utils/form_utils.js"></script>
-	<script language="javascript" type="text/javascript" src="<?php echo esc_url( includes_url() ); ?>/js/jquery/jquery.js"></script>
+
+	<script language="javascript" type="text/javascript" src="<?php echo esc_url( $includes_url ); ?>/js/tinymce/tiny_mce_popup.js"></script>
+	<script language="javascript" type="text/javascript" src="<?php echo esc_url( $includes_url ); ?>/js/jquery/jquery.js"></script>
 	<script language="javascript" type="text/javascript" src="<?php echo esc_url( $an_mc_plugin_url ); ?>assets/js/shortcode-popup.js"></script>
 	<base target="_self"/>
 
@@ -33,12 +30,12 @@ if ( $an_mc_api_key ) {
 		}
 	</style>
 </head>
-<body onload="init();">
+<body onload="an_mc_init();">
 <?php
 if ( ! $an_mc_api_key ) {
 	AN_MC_View::get_instance()->get_template( '/notice/change-settings', array( 'target' => 'target="_blank"' ) );
 } elseif ( ! is_array( $an_mc_lists ) ) { ?>
-	<p><?php esc_html_e( 'You need to configure MailChimp settings first.', 'another-mailchimp-widget' ) ?></p>
+	<p><?php esc_html_e( 'You need to configure Mailchimp settings first.', 'another-mailchimp-widget' ) ?></p>
 <?php } else { ?>
 	<form name="buttons" action="#">
 		<label for="mpam_list_ids"><?php esc_html_e( 'Select lists and groups your users will be signed up to', 'another-mailchimp-widget' ); ?></label>
@@ -84,7 +81,7 @@ if ( ! $an_mc_api_key ) {
 			<label for="failure_message"><?php esc_html_e( 'Failure message', 'another-mailchimp-widget' ); ?></label>
 			<textarea class="properties" id="failure_message" name="failure_message"><?php esc_html_e( 'There was a problem processing your submission.', 'another-mailchimp-widget' ); ?></textarea>
 		</p>
-		<p><input type="submit" id="insert" name="insert" value="<?php esc_attr_e( 'Insert', 'another-mailchimp-widget' ); ?>" onClick="submitData();"/></p>
+		<p><input type="submit" id="insert" name="insert" value="<?php esc_attr_e( 'Insert', 'another-mailchimp-widget' ); ?>" onClick="an_mc_submit();"/></p>
 	</form>
 <?php } ?>
 </body>

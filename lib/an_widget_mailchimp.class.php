@@ -22,8 +22,8 @@ class AN_Widget_MailChimp extends Widget_Default_AN_MC {
 		
 		$this->setPrefix( 'an' );
 		$this->setClassName( 'widget_an_mailchimp' );
-		$this->setName( esc_html__( 'Another Mailchimp Widget', 'another-mailchimp-widget' ) );
-		$this->setDescription( esc_html__( 'Displays a sign-up form for a MailChimp mailing list.', 'another-mailchimp-widget' ) );
+		$this->setName( esc_html__( 'Mailchimp Widget', 'another-mailchimp-widget' ) );
+		$this->setDescription( esc_html__( 'Displays a sign-up form for a Mailchimp mailing list.', 'another-mailchimp-widget' ) );
 		$this->setIdSuffix( 'mailchimp' );
 		$this->an_mc_plugin = AN_MC_Plugin::get_instance();
 		
@@ -198,7 +198,7 @@ class AN_Widget_MailChimp extends Widget_Default_AN_MC {
 					<input class="widefat" id="<?php echo esc_attr( $this->get_field_id( 'title' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'title' ) ); ?>" type="text" value="<?php echo esc_attr( $title ); ?>"/>
 				</p>
 				<?php if ( ! is_array( $this->lists ) ) { ?>
-					<p><?php esc_html_e( 'You need to configure MailChimp settings first.', 'another-mailchimp-widget' ) ?></p>
+					<p><?php esc_html_e( 'You need to configure Mailchimp settings first.', 'another-mailchimp-widget' ) ?></p>
 				<?php } ?>
 				<p>
 					<label for="<?php echo esc_attr( $this->get_field_id( 'current_mailing_list' ) ); ?>"><?php esc_html_e( 'Select lists and groups your users will be signed up to', 'another-mailchimp-widget' ); ?></label>

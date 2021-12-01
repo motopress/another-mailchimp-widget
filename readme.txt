@@ -1,4 +1,4 @@
-=== Another MailChimp Widget ===
+=== Another Mailchimp Widget ===
 Contributors: jameslafferty, MotoPress
 Donate link: https://motopress.com/
 Tags: newsletter, mailchimp, mailchimp widget, mailchimp subscribe, mailchimp shortcode
@@ -8,19 +8,19 @@ Stable tag: 2.1.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-Simple MailChimp subscription form to your lists and groups.
+Simple Mailchimp subscription form to your lists and groups.
 
 == Description ==
 
-This plugin lets your users sign up for your MailChimp lists and groups via subscription form added through widget or shortcode.
-Based on [jameslafferty](https://profiles.wordpress.org/jameslafferty/) ["MailChimp Widget" plugin](https://wordpress.org/plugins/mailchimp-widget/).
+This plugin lets your users sign up for your Mailchimp lists and groups via subscription form added through widget or shortcode.
+Based on [jameslafferty](https://profiles.wordpress.org/jameslafferty/) ["Mailchimp Widget" plugin](https://wordpress.org/plugins/mailchimp-widget/).
 
 = Shortcode example: =
 
 [mp-mc-form list="list_id/group_id" button="Subscribe" email_text="Your E-mail" first_name_text="First Name" last_name_text="Last Name" placeholder="true" firstname="false" lastname="false" success="Thank you for joining our mailing list." failure="There was a problem processing your submission." ]
 
 = Shortcode attributes: =
-* list - MailChimp list_id or list_id/group_id if you want to subscribe to specific group. To subscribe to several lists and groups separate them by comma.
+* list - Mailchimp list_id or list_id/group_id if you want to subscribe to specific group. To subscribe to several lists and groups separate them by comma.
 * button - button label
 * email_text - label of the email address field
 * first_name_text - label of the first name field
@@ -34,7 +34,7 @@ Based on [jameslafferty](https://profiles.wordpress.org/jameslafferty/) ["MailCh
 == Installation ==
 1. Upload the plugin to /wp-content/plugins/.
 1. Activate the plugin through the "Plugins" menu in WordPress.
-1. Enter a valid MailChimp API key on the Settings > Another MailChimp page.
+1. Enter a valid Mailchimp API key on the Settings > Mailchimp page.
 1. Drag the widget into your sidebar from the "Widgets" menu in WordPress or add subscription form via shortcode to any page or post.
 1. Select a mailing list and configure options.
 
@@ -86,7 +86,7 @@ Based on [jameslafferty](https://profiles.wordpress.org/jameslafferty/) ["MailCh
 * Bug fix: fixed the issue with html code when the form was incorrect after user subscription.
 
 = 1.3.3 =
-* Bug fix: increased MailChimp pagination limit to get more than 10 lists and interests
+* Bug fix: increased Mailchimp pagination limit to get more than 10 lists and interests
 
 = 1.3.2 =
 * Bug fix: Fixed output of custom notifications.
@@ -95,7 +95,7 @@ Based on [jameslafferty](https://profiles.wordpress.org/jameslafferty/) ["MailCh
 * Bug fix: Fixed the issue of autoloading classes.
 
 = 1.3 =
-* MailChimp API v3.0
+* Mailchimp API v3.0
 
 = 1.2 =
 * Admin notice removed

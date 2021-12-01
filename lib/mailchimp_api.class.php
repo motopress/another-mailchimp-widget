@@ -242,14 +242,14 @@ class MailChimp_API {
 	 * @return mixed|string
 	 */
 	public function get_response_message() {
-		$default_message = esc_html__( 'Invalid MailChimp API key', 'another-mailchimp-widget' );
+		$default_message = esc_html__( 'Invalid Mailchimp API key', 'another-mailchimp-widget' );
 		
 		$messages = array(
-			'104' => esc_html__( 'Invalid MailChimp API key', 'another-mailchimp-widget' ),
-			'106' => esc_html__( 'Invalid MailChimp API key', 'another-mailchimp-widget' ),
+			'104' => esc_html__( 'Invalid Mailchimp API key', 'another-mailchimp-widget' ),
+			'106' => esc_html__( 'Invalid Mailchimp API key', 'another-mailchimp-widget' ),
 			'401' => $this->errorMessage,
 			'403' => $this->errorMessage,
-			'503' => esc_html__( 'Invalid MailChimp API key', 'another-mailchimp-widget' ),
+			'503' => esc_html__( 'Invalid Mailchimp API key', 'another-mailchimp-widget' ),
 		
 		);
 		

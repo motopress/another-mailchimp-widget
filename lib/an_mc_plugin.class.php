@@ -169,7 +169,7 @@ class AN_MC_Plugin {
 			if ( ! wp_verify_nonce( $nonce, $nonce_key ) ) { ?>
 				<div class="wrap">
 					<div id="icon-options-general" class="icon32"><br/></div>
-					<h2><?php esc_html_e( 'Another MailChimp Widget Settings', 'another-mailchimp-widget' ); ?></h2>
+					<h2><?php esc_html_e( 'Mailchimp Settings', 'another-mailchimp-widget' ); ?></h2>
 					<p><?php esc_html_e( 'What you\'re trying to do looks a little shady.', 'another-mailchimp-widget' ); ?></p>
 				</div>
 				<?php return;
@@ -182,13 +182,13 @@ class AN_MC_Plugin {
 		} ?>
 		<div class="wrap">
 			<div id="icon-options-general" class="icon32"><br/></div>
-			<h2><?php esc_html_e( 'Another MailChimp Widget Settings', 'another-mailchimp-widget' ); ?></h2>
-			<p><?php echo wp_kses_post( __( 'Enter a valid <a href="http://kb.mailchimp.com/accounts/management/about-api-keys#Find-or-Generate-Your-API-Key" target="_blank">MailChimp API key</a> here to get started. You will need to have at least one MailChimp list set up.', 'another-mailchimp-widget' ) ); ?></p>
+			<h2><?php esc_html_e( 'Mailchimp Settings', 'another-mailchimp-widget' ); ?></h2>
+			<p><?php echo wp_kses_post( __( 'Enter a valid <a href="http://kb.mailchimp.com/accounts/management/about-api-keys#Find-or-Generate-Your-API-Key" target="_blank">Mailchimp API key</a> here to get started. You will need to have at least one Mailchimp list set up.', 'another-mailchimp-widget' ) ); ?></p>
 			<form action="options.php" method="post">
 				<?php settings_fields( self::$prefix . '_options' ); ?>
 				<table class="form-table">
 					<tr valign="top">
-						<th scope="row"><label for="<?php echo esc_attr( self::$prefix . '-api-key' ); ?>"><?php esc_html_e( 'MailChimp API Key', 'another-mailchimp-widget' ); ?></label></th>
+						<th scope="row"><label for="<?php echo esc_attr( self::$prefix . '-api-key' ); ?>"><?php esc_html_e( 'Mailchimp API Key', 'another-mailchimp-widget' ); ?></label></th>
 						<td>
 							<?php if ( ! empty( $api_key ) ):
 								$mcapi = $this->get_mcapi();
@@ -218,7 +218,7 @@ class AN_MC_Plugin {
 							if ( !empty($lists) ) {?>
 							<tr valign="top">
 								<th scope="row">
-									<?php esc_html_e( 'MailChimp Lists and Groups', 'another-mailchimp-widget' ); ?>
+									<?php esc_html_e( 'Mailchimp Lists and Groups', 'another-mailchimp-widget' ); ?>
 								</th>
 								<td><?php
 									
@@ -259,7 +259,7 @@ class AN_MC_Plugin {
 			<code>[mp-mc-form list="list_id/group_id" button="Subscribe" email_text="Your E-mail" first_name_text="First Name" last_name_text="Last Name" placeholder="true" firstname="false" lastname="false" success="Thank you for joining our mailing list." failure="There was a problem processing your submission." ]</code>
 			<h4><?php esc_html_e( 'Shortcode attributes:', 'another-mailchimp-widget' ); ?></h4>
 			<ul>
-				<li><?php echo wp_kses_post( sprintf( __( '%s - MailChimp <kbd>list_id</kbd> or <kbd>list_id/group_id</kbd> if you want to subscribe to specific group. To subscribe to several lists and groups separate them by comma.', 'another-mailchimp-widget' ), '<code>list</code>' ) ); ?></li>
+				<li><?php echo wp_kses_post( sprintf( __( '%s - Mailchimp <kbd>list_id</kbd> or <kbd>list_id/group_id</kbd> if you want to subscribe to specific group. To subscribe to several lists and groups separate them by comma.', 'another-mailchimp-widget' ), '<code>list</code>' ) ); ?></li>
 				<li><?php echo wp_kses_post( sprintf( __( '%s - button label.', 'another-mailchimp-widget' ), '<code>button</code>' ) ); ?></li>
 				<li><?php echo wp_kses_post( sprintf( __( '%s - label of the email address field.', 'another-mailchimp-widget' ), '<code>email_text</code>' ) ); ?></li>
 				<li><?php echo wp_kses_post( sprintf( __( '%s - label of the first name field.', 'another-mailchimp-widget' ), '<code>first_name_text</code>' ) ); ?></li>
@@ -372,7 +372,7 @@ class AN_MC_Plugin {
 	 * Add submenu page
 	 */
 	public function set_up_admin_page() {
-		add_submenu_page( 'options-general.php', esc_html__( 'Another MailChimp', 'another-mailchimp-widget' ), esc_html__( 'Another MailChimp', 'another-mailchimp-widget' ),
+		add_submenu_page( 'options-general.php', esc_html__( 'Mailchimp', 'another-mailchimp-widget' ), esc_html__( 'Mailchimp', 'another-mailchimp-widget' ),
 			'activate_plugins', __FILE__, array( &$this, 'admin_page' ) );
 	}
 	
@@ -388,12 +388,12 @@ class AN_MC_Plugin {
 	 */
 	public function add_scripts() {
 		if ( ! is_admin() ) {
-			wp_enqueue_script( 'ns-mc-widget', AN_MC_PLUGIN_URL . 'assets/js/another-mailchimp.min.js', array( 'jquery' ), null );
+			wp_enqueue_script( 'ns-mc-widget', AN_MC_PLUGIN_URL . 'assets/js/another-mailchimp.min.js', array( 'jquery' ), AN_MC_PLUGIN_VERSION, true );
 		}
 	}
 	
 	public function add_style() {
-		wp_enqueue_style( 'mp-am-widget', AN_MC_PLUGIN_URL . 'assets/css/style.css', array(), null );
+		wp_enqueue_style( 'mp-am-widget', AN_MC_PLUGIN_URL . 'assets/css/style.css', array(), AN_MC_PLUGIN_VERSION );
 	}
 	
 	/**
