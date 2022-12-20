@@ -4,10 +4,10 @@
 			// Register commands
 			ed.addCommand('mp-mc-form', function() {
 				ed.windowManager.open({
-					file: url + '/../forms/an_shortcode_mailchimp.php', // file that contains HTML for our modal window
+					url: an_mc_dialog_url, // file that contains HTML for our modal window
 					width: 500 + parseInt(ed.getLang('button.delta_width', 0)), // size of our window
 					height: 400 + parseInt(ed.getLang('button.delta_height', 0)), // size of our window
-					inline: 1
+					inline: 1,
 				}, {
 					plugin_url: url
 				});

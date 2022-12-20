@@ -71,7 +71,7 @@ class AN_MC_View {
 		$out = ob_get_clean();
 		
 		if ( $output ) {
-			echo $out;
+			echo $out; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		} else {
 			return $out;
 		}
@@ -147,7 +147,7 @@ class AN_MC_View {
 		$located = $this->locate_template( $template_name, $template_path, $default_path );
 		
 		if ( ! file_exists( $located ) ) {
-			_doing_it_wrong( __FUNCTION__, sprintf( '<code>%s</code> does not exist.', $located ), '2.1' );
+			_doing_it_wrong( __FUNCTION__, sprintf( '<code>%s</code> does not exist.', $located ), '2.1' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			
 			return;
 		}

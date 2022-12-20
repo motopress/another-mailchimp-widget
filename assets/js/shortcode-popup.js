@@ -1,10 +1,10 @@
-function init() {
+function an_mc_init() {
 	tinyMCEPopup.resizeToInnerSize();
 }
 
-function submitData() {
+function an_mc_submit() {
+
 	var shortcode;
-	var selectedContent = tinyMCE.activeEditor.selection.getContent();
 	var current_mailing_list = [];
 
 	var box_wrapper = jQuery('#mpmc-box-wrapper');

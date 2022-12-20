@@ -61,8 +61,21 @@ class AN_MC_Plugin {
 		add_action( 'admin_menu', array( &$this, 'set_up_admin_page' ) );
 		add_action( 'widgets_init', array( $this, 'widgets_init' ) );
 		add_action( 'admin_notices', array( $this, 'admin_notice' ), 10, 1 );
+
+		add_action( 'plugin_action_links_' . plugin_basename( AN_MC_PLUGIN_FILE ), array( $this, 'action_links' ) );
 	}
-	
+
+	public function action_links( $links ) {
+
+		$settings_page_url = admin_url( 'options-general.php?page=another-mailchimp-widget/lib/an_mc_plugin.class.php' );
+
+		$plugin_links = array(
+			'<a href=' . esc_url( $settings_page_url ) . '>' . esc_html__( 'Settings', 'another-mailchimp-widget' ) . '</a>'
+		);
+
+		return array_merge( $links, $plugin_links );
+	}
+
 	public function widgets_init() {
 		register_widget("AN_Widget_MailChimp");
 	}
@@ -125,7 +138,7 @@ class AN_MC_Plugin {
 		global $current_user;
 		$userid = $current_user->ID;
 		if ( ! get_user_meta( $userid, 'ignore_error_notice' ) ) {
-			echo '<div class="notice error fade  is-dismissible">' . $this->get_admin_notices() . '<p><a href="' . esc_url( add_query_arg( 'dismiss_another-mailchimp', 'yes' ) ) . '">' . __( 'Dismiss this notice', 'another-mailchimp-widget' ) . '</a></p></div>';
+			echo '<div class="notice error fade  is-dismissible">' . $this->get_admin_notices() . '<p><a href="' . esc_url( add_query_arg( 'dismiss_another-mailchimp', 'yes' ) ) . '">' . esc_html__( 'Dismiss this notice', 'another-mailchimp-widget' ) . '</a></p></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		}
 	}
 	
@@ -150,18 +163,18 @@ class AN_MC_Plugin {
 		$api_key = ( is_array( $this->options ) ) ? $this->options[ 'api-key' ] : '';
 		if ( isset( $_POST[ self::$prefix . '_nonce' ] ) ) {
 			
-			$nonce     = $_POST[ self::$prefix . '_nonce' ];
+			$nonce     = sanitize_text_field( wp_unslash( $_POST[ self::$prefix . '_nonce' ] ) );
 			$nonce_key = self::$prefix . '_update_options';
 			
 			if ( ! wp_verify_nonce( $nonce, $nonce_key ) ) { ?>
 				<div class="wrap">
 					<div id="icon-options-general" class="icon32"><br/></div>
-					<h2><?php _e( 'Another MailChimp Widget Settings', 'another-mailchimp-widget' ); ?></h2>
-					<p><?php _e( 'What you\'re trying to do looks a little shady.', 'another-mailchimp-widget' ); ?></p>
+					<h2><?php esc_html_e( 'Mailchimp Settings', 'another-mailchimp-widget' ); ?></h2>
+					<p><?php esc_html_e( 'What you\'re trying to do looks a little shady.', 'another-mailchimp-widget' ); ?></p>
 				</div>
 				<?php return;
 			} else {
-				$new_api_key              = $_POST[ self::$prefix . '-api-key' ];
+				$new_api_key              = sanitize_text_field( wp_unslash( $_POST[ self::$prefix . '-api-key' ] ) );
 				$new_options[ 'api-key' ] = $new_api_key;
 				$this->update_options( $new_options );
 				$api_key = $this->options[ 'api-key' ];
@@ -169,24 +182,24 @@ class AN_MC_Plugin {
 		} ?>
 		<div class="wrap">
 			<div id="icon-options-general" class="icon32"><br/></div>
-			<h2><?php _e( 'Another MailChimp Widget Settings', 'another-mailchimp-widget' ); ?></h2>
-			<p><?php _e( 'Enter a valid <a href="http://kb.mailchimp.com/accounts/management/about-api-keys#Find-or-Generate-Your-API-Key" target="_blank">MailChimp API key</a> here to get started. You will need to have at least one MailChimp list set up.', 'another-mailchimp-widget' ) ?></p>
+			<h2><?php esc_html_e( 'Mailchimp Settings', 'another-mailchimp-widget' ); ?></h2>
+			<p><?php echo wp_kses_post( __( 'Enter a valid <a href="http://kb.mailchimp.com/accounts/management/about-api-keys#Find-or-Generate-Your-API-Key" target="_blank">Mailchimp API key</a> here to get started. You will need to have at least one Mailchimp list set up.', 'another-mailchimp-widget' ) ); ?></p>
 			<form action="options.php" method="post">
 				<?php settings_fields( self::$prefix . '_options' ); ?>
 				<table class="form-table">
 					<tr valign="top">
-						<th scope="row"><label for="<?php echo self::$prefix . '-api-key' ?>"><?php _e( 'MailChimp API Key', 'another-mailchimp-widget' ); ?></label></th>
+						<th scope="row"><label for="<?php echo esc_attr( self::$prefix . '-api-key' ); ?>"><?php esc_html_e( 'Mailchimp API Key', 'another-mailchimp-widget' ); ?></label></th>
 						<td>
 							<?php if ( ! empty( $api_key ) ):
 								$mcapi = $this->get_mcapi();
 								$mcapi->get_lists();
 								$HTTP_Code = $mcapi->HTTP_Code;
 							endif; ?>
-							<input class="regular-text" id="<?php echo self::$prefix; ?>-api-key" name="<?php echo self::$prefix; ?>_options[api-key]" type="password" value="<?php echo $api_key ?>"/>
+							<input class="regular-text" id="<?php echo esc_attr( self::$prefix ); ?>-api-key" name="<?php echo esc_attr( self::$prefix ); ?>_options[api-key]" type="password" value="<?php echo esc_attr( $api_key ); ?>" autocomplete="new-password"/>
 							
 							<?php if ( ! empty( $HTTP_Code ) && ( $HTTP_Code != 200 ) ): ?>
 								<br/>
-								<i> <?php echo $mcapi->get_response_message() ?> </i>
+								<i><?php echo wp_kses_post( $mcapi->get_response_message() ); ?></i>
 							<?php endif; ?>
 
 						</td>
@@ -194,10 +207,10 @@ class AN_MC_Plugin {
 					<?php if ( ! empty( $api_key ) && empty( $mcapi->errorMessage ) ) { ?>
 						<tr valign="top">
 							<th scope="row">
-								<label for="<?php echo self::$prefix . '-mpam-sync' ?>"><?php _e( 'Update Lists', 'another-mailchimp-widget' ); ?></label>
+								<label for="<?php echo esc_attr( self::$prefix . '-mpam-sync' ); ?>"><?php esc_html_e( 'Update Lists', 'another-mailchimp-widget' ); ?></label>
 							</th>
 							<td>
-								<input class="button" id="<?php echo self::$prefix; ?>-mpam-sync" name="<?php echo self::$prefix; ?>_options[mpam_sync]" type="Submit" value="<?php _e( 'Synchronize', 'another-mailchimp-widget' ); ?>"/>
+								<input class="button" id="<?php echo esc_attr( self::$prefix ); ?>-mpam-sync" name="<?php echo esc_attr( self::$prefix ); ?>_options[mpam_sync]" type="Submit" value="<?php esc_html_e( 'Synchronize', 'another-mailchimp-widget' ); ?>"/>
 							</td>
 						</tr>
 						<?php
@@ -205,24 +218,27 @@ class AN_MC_Plugin {
 							if ( !empty($lists) ) {?>
 							<tr valign="top">
 								<th scope="row">
-									<?php _e( 'MailChimp Lists and Groups', 'another-mailchimp-widget' ); ?>
+									<?php esc_html_e( 'Mailchimp Lists and Groups', 'another-mailchimp-widget' ); ?>
 								</th>
 								<td><?php
 									
 									if ( !empty($lists) ) {?>
-										<p class="description"><?php _e( 'Use these List ID / Group ID in the shortcode as described below. ', 'another-mailchimp-widget' ); ?></p>
+										<p class="description"><?php esc_html_e( 'Use these List ID / Group ID in the shortcode as described below. ', 'another-mailchimp-widget' ); ?></p>
 										<ul>
 										<?php
 										foreach ($lists as $list) {
-											echo '<li><code><small><strong>' . __( 'List', 'another-mailchimp-widget' ) .'</strong></small></code> ' . $list['title'] . ' - <code>' . $list['id'] . '</code></li>';
+
+											echo '<li><code><small><strong>' . esc_html__( 'List', 'another-mailchimp-widget' ) .'</strong></small></code> ' . esc_html( $list['title'] ) . ' - <code>' . esc_html( $list['id'] ) . '</code></li>';
+
 											if ( !empty ($list['categories']) ) {
 												foreach ($list['categories'] as $category) {
-													//echo '&nbsp;&nbsp;' . $category['title'] . ' - ' . $category['id'] . '<br/>';
+
 													if ( !empty($category['interests']) ) {?>
 														<li><ul>
 														<?php
 														foreach ($category['interests'] as $interests) {
-															echo '<li style="margin-left:1em;"><code><small><strong>' . __( 'Group', 'another-mailchimp-widget' ) .'</strong></small></code> ' . $interests['title'] . ' - <code>' . $interests['id'] . '</code></li>';
+
+															echo '<li style="margin-left:1em;"><code><small><strong>' . esc_html__( 'Group', 'another-mailchimp-widget' ) .'</strong></small></code> ' . esc_html( $interests['title'] ) . ' - <code>' . esc_html( $interests['id'] ) . '</code></li>';
 														} ?>
 														</ul></li><?php
 													}
@@ -237,26 +253,30 @@ class AN_MC_Plugin {
 						<?php } ?>
 					<?php } ?>
 				</table>
-				<p class="submit"><input type="submit" name="Submit" class="button-primary" value="<?php _e( 'Save Changes', 'another-mailchimp-widget' ); ?>"/></p>
+				<p class="submit"><input type="submit" name="Submit" class="button-primary" value="<?php esc_html_e( 'Save Changes', 'another-mailchimp-widget' ); ?>"/></p>
 			</form>
-			<h4><?php _e( 'Shortcode example:', 'another-mailchimp-widget' ); ?></h4>
+			<h4><?php esc_html_e( 'Shortcode example:', 'another-mailchimp-widget' ); ?></h4>
 			<code>[mp-mc-form list="list_id/group_id" button="Subscribe" email_text="Your E-mail" first_name_text="First Name" last_name_text="Last Name" placeholder="true" firstname="false" lastname="false" success="Thank you for joining our mailing list." failure="There was a problem processing your submission." ]</code>
-			<h4><?php _e( 'Shortcode attributes:', 'another-mailchimp-widget' ); ?></h4>
+			<h4><?php esc_html_e( 'Shortcode attributes:', 'another-mailchimp-widget' ); ?></h4>
 			<ul>
-				<li><?php printf( __( '%s - MailChimp <kbd>list_id</kbd> or <kbd>list_id/group_id</kbd> if you want to subscribe to specific group. To subscribe to several lists and groups separate them by comma.', 'another-mailchimp-widget' ), '<code>list</code>' ) ?></li>
-				<li><?php printf( __( '%s - button label.', 'another-mailchimp-widget' ), '<code>button</code>' ) ?></li>
-				<li><?php printf( __( '%s - label of the email address field.', 'another-mailchimp-widget' ), '<code>email_text</code>' ) ?></li>
-				<li><?php printf( __( '%s - label of the first name field.', 'another-mailchimp-widget' ), '<code>first_name_text</code>' ) ?></li>
-				<li><?php printf( __( '%s - label of the last name field.', 'another-mailchimp-widget' ), '<code>last_name_text</code>' ) ?></li>
-				<li><?php printf( __( '%s - true or false; set true to display labels as placeholders.', 'another-mailchimp-widget' ), '<code>placeholder</code>' ) ?></li>
-				<li><?php printf( __( '%s - true or false; set true if first name is required.', 'another-mailchimp-widget' ), '<code>firstname</code>' ) ?></li>
-				<li><?php printf( __( '%s - true or false; set true if last name is required.', 'another-mailchimp-widget' ), '<code>lastname</code>' ) ?></li>
-				<li><?php printf( __( '%s - success message.', 'another-mailchimp-widget' ), '<code>success</code>' ) ?></li>
-				<li><?php printf( __( '%s - failure message.', 'another-mailchimp-widget' ), '<code>failure</code>' ) ?></li>
+				<li><?php echo wp_kses_post( sprintf( __( '%s - Mailchimp <kbd>list_id</kbd> or <kbd>list_id/group_id</kbd> if you want to subscribe to specific group. To subscribe to several lists and groups separate them by comma.', 'another-mailchimp-widget' ), '<code>list</code>' ) ); ?></li>
+				<li><?php echo wp_kses_post( sprintf( __( '%s - button label.', 'another-mailchimp-widget' ), '<code>button</code>' ) ); ?></li>
+				<li><?php echo wp_kses_post( sprintf( __( '%s - label of the email address field.', 'another-mailchimp-widget' ), '<code>email_text</code>' ) ); ?></li>
+				<li><?php echo wp_kses_post( sprintf( __( '%s - label of the first name field.', 'another-mailchimp-widget' ), '<code>first_name_text</code>' ) ); ?></li>
+				<li><?php echo wp_kses_post( sprintf( __( '%s - label of the last name field.', 'another-mailchimp-widget' ), '<code>last_name_text</code>' ) ); ?></li>
+				<li><?php echo wp_kses_post( sprintf( __( '%s - true or false; set true to display labels as placeholders.', 'another-mailchimp-widget' ), '<code>placeholder</code>' ) ); ?></li>
+				<li><?php echo wp_kses_post( sprintf( __( '%s - true or false; set true if first name is required.', 'another-mailchimp-widget' ), '<code>firstname</code>' ) ); ?></li>
+				<li><?php echo wp_kses_post( sprintf( __( '%s - true or false; set true if last name is required.', 'another-mailchimp-widget' ), '<code>lastname</code>' ) ); ?></li>
+				<li><?php echo wp_kses_post( sprintf( __( '%s - success message.', 'another-mailchimp-widget' ), '<code>success</code>' ) ); ?></li>
+				<li><?php echo wp_kses_post( sprintf( __( '%s - failure message.', 'another-mailchimp-widget' ), '<code>failure</code>' ) ); ?></li>
 			</ul>
 			<hr>
-			<p><?php printf( __( 'If you like this plugin please leave us a <a href="%s" target="_blank">★★★★★ rating</a>.', 'another-mailchimp-widget' ),
-				'https://wordpress.org/plugins/another-mailchimp-widget/'); ?></p>
+			<p><?php echo wp_kses_post(
+				sprintf(
+					__( 'If you like this plugin please leave us a <a href="%s" target="_blank">★★★★★ rating</a>.', 'another-mailchimp-widget' ),
+					'https://wordpress.org/support/plugin/another-mailchimp-widget/reviews/'
+				)
+			); ?></p>
 			<p></p>
 		</div>
 	<?php }
@@ -352,7 +372,7 @@ class AN_MC_Plugin {
 	 * Add submenu page
 	 */
 	public function set_up_admin_page() {
-		add_submenu_page( 'options-general.php', __( 'Another MailChimp', 'another-mailchimp-widget' ), __( 'Another MailChimp', 'another-mailchimp-widget' ),
+		add_submenu_page( 'options-general.php', esc_html__( 'Mailchimp', 'another-mailchimp-widget' ), esc_html__( 'Mailchimp', 'another-mailchimp-widget' ),
 			'activate_plugins', __FILE__, array( &$this, 'admin_page' ) );
 	}
 	
@@ -368,12 +388,12 @@ class AN_MC_Plugin {
 	 */
 	public function add_scripts() {
 		if ( ! is_admin() ) {
-			wp_enqueue_script( 'ns-mc-widget', AN_MC_PLUGIN_URL . 'assets/js/another-mailchimp.min.js', array( 'jquery' ), null );
+			wp_enqueue_script( 'ns-mc-widget', AN_MC_PLUGIN_URL . 'assets/js/another-mailchimp.min.js', array( 'jquery' ), AN_MC_PLUGIN_VERSION, true );
 		}
 	}
 	
 	public function add_style() {
-		wp_enqueue_style( 'mp-am-widget', AN_MC_PLUGIN_URL . 'assets/css/style.css', array(), null );
+		wp_enqueue_style( 'mp-am-widget', AN_MC_PLUGIN_URL . 'assets/css/style.css', array(), AN_MC_PLUGIN_VERSION );
 	}
 	
 	/**
@@ -391,7 +411,9 @@ class AN_MC_Plugin {
 			
 			if ( is_object( $mcapi ) ) {
 				
-				$request_api_key = isset( $_POST[ 'ns_mc_options' ][ 'api-key' ] ) ? $_POST[ 'ns_mc_options' ][ 'api-key' ] : false;
+				$request_api_key = isset( $_POST[ 'ns_mc_options' ][ 'api-key' ] ) ?
+					sanitize_text_field( wp_unslash( $_POST[ 'ns_mc_options' ][ 'api-key' ] ) ) : false;
+
 				$api_key         = $this->get_api_key();
 				
 				if ( $api_key !== $request_api_key && $request_api_key ) {

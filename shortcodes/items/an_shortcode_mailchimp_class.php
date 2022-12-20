@@ -24,9 +24,9 @@ class AN_Shortcode_MailChimp {
 		
 		$this->indexShortcode          = $index_sh;
 		$this->option_name             = 'sh_' . $this->id_base;
-		$this->default_failure_message = __( 'There was a problem processing your submission.', 'another-mailchimp-widget' );
-		$this->default_signup_text     = __( 'Subscribe', 'another-mailchimp-widget' );
-		$this->default_success_message = __( 'Thank you for joining our mailing list.', 'another-mailchimp-widget' );
+		$this->default_failure_message = esc_html__( 'There was a problem processing your submission.', 'another-mailchimp-widget' );
+		$this->default_signup_text     = esc_html__( 'Subscribe', 'another-mailchimp-widget' );
+		$this->default_success_message = esc_html__( 'Thank you for joining our mailing list.', 'another-mailchimp-widget' );
 		$this->an_mc_plugin            = AN_MC_Plugin::get_instance();
 		
 		add_action( 'parse_request', array( &$this, 'process_submission' ) );
@@ -58,7 +58,7 @@ class AN_Shortcode_MailChimp {
 		$api_key = AN_MC_Plugin::get_instance()->is_have_api_key();
 		
 		if ( $this->successful_signup ) {
-			echo $this->signup_success_message;
+			echo wp_kses_post( $this->signup_success_message );
 		} elseif ( ! $api_key ) {
 			AN_MC_View::get_instance()->get_template( '/notice/change-settings' );
 		} elseif ( empty( $instance[ 'current_mailing_list' ] ) ) {
@@ -67,30 +67,30 @@ class AN_Shortcode_MailChimp {
 			<div class="an_mailchimp_wrapper">
 				<?php $data = array(
 					'id'  => $this->id_base . '_form_' . $this->indexShortcode,
-					'url' => $_SERVER[ 'REQUEST_URI' ]
+					'url' => sanitize_text_field( wp_unslash( $_SERVER[ 'REQUEST_URI' ] ) )
 				) ?>
-				<form action="<?php echo $_SERVER[ 'REQUEST_URI' ]; ?>"
-				      data-id="<?php echo $data[ 'id' ] ?>"
-				      data-url="<?php echo $data[ 'url' ] ?>"
-				      id="<?php echo $data[ 'id' ] ?>" method="post" class="<?php
+				<form action="<?php echo esc_url( sanitize_text_field( wp_unslash( $_SERVER[ 'REQUEST_URI' ] ) ) ); ?>"
+				      data-id="<?php echo esc_attr( $data[ 'id' ] ); ?>"
+				      data-url="<?php echo esc_attr( $data[ 'url' ] ); ?>"
+				      id="<?php echo esc_attr( $data[ 'id' ] ); ?>" method="post" class="<?php
 				if ( $instance[ 'showplaceholder' ] ) {
 					echo 'mailchimp_form_placeholder ';
 				}
 				if ( ! $instance[ 'collect_first' ] && ! $instance[ 'collect_last' ] ) {
 					echo 'mailchimp_form_simple';
 				} ?>">
-					<?php echo $this->subscribe_errors;
+					<?php echo wp_kses_post( $this->subscribe_errors );
 					if ( $instance[ 'collect_first' ] ) {
 						if ( $instance[ 'showplaceholder' ] ) { ?>
 							<p>
 								<label>
-									<input placeholder="<?php echo $instance[ 'first_name_text' ] ?>" type="text" id="<?php echo $this->id_base . '_first_name'; ?>" required name="<?php echo $this->id_base . '_first_name'; ?>"/>
+									<input placeholder="<?php echo esc_attr( $instance[ 'first_name_text' ] ); ?>" type="text" id="<?php echo esc_attr( $this->id_base . '_first_name' ); ?>" required name="<?php echo esc_attr( $this->id_base . '_first_name' ); ?>"/>
 								</label>
 							</p>
 						<?php } else { ?>
 							<p>
-								<label for="<?php echo $this->id_base . '_first_name'; ?>"><?php echo $instance[ 'first_name_text' ] ?></label>
-								<input type="text" id="<?php echo $this->id_base . '_first_name'; ?>" required name="<?php echo $this->id_base . '_first_name'; ?>"/>
+								<label for="<?php echo esc_attr( $this->id_base . '_first_name' ); ?>"><?php echo esc_html( $instance[ 'first_name_text' ] ); ?></label>
+								<input type="text" id="<?php echo esc_attr( $this->id_base . '_first_name' ); ?>" required name="<?php echo esc_attr( $this->id_base . '_first_name' ); ?>"/>
 							</p>
 						<?php }
 					}
@@ -98,33 +98,33 @@ class AN_Shortcode_MailChimp {
 						if ( $instance[ 'showplaceholder' ] ) { ?>
 							<p>
 								<label>
-									<input placeholder="<?php echo $instance[ 'last_name_text' ] ?>" required type="text" id="<?php echo $this->id_base . '_last_name'; ?>" name="<?php echo $this->id_base . '_last_name'; ?>"/>
+									<input placeholder="<?php echo esc_attr( $instance[ 'last_name_text' ] ); ?>" required type="text" id="<?php echo esc_attr( $this->id_base . '_last_name' ); ?>" name="<?php echo esc_attr( $this->id_base . '_last_name' ); ?>"/>
 								</label>
 							</p>
 						<?php } else { ?>
 							<p>
-								<label for="<?php echo $this->id_base . '_last_name'; ?>"><?php echo $instance[ 'last_name_text' ] ?></label>
-								<input type="text" id="<?php echo $this->id_base . '_last_name'; ?>" required name="<?php echo $this->id_base . '_last_name'; ?>"/>
+								<label for="<?php echo esc_attr( $this->id_base . '_last_name' ); ?>"><?php echo esc_html( $instance[ 'last_name_text' ] ); ?></label>
+								<input type="text" id="<?php echo esc_attr( $this->id_base . '_last_name' ); ?>" required name="<?php echo esc_attr( $this->id_base . '_last_name' ); ?>"/>
 							</p>
 						<?php }
 					} ?>
-					<input type="hidden" name="widget_error" value="<?php echo $instance[ 'failure_message' ] ?>"/>
-					<input type="hidden" name="widget_success" value="<?php echo $instance[ 'success_message' ] ?>"/>
-					<input type="hidden" name="widget_id" value="<?php echo $this->id_base; ?>"/>
-					<input type="hidden" name="widget_number" value="<?php echo $this->indexShortcode; ?>"/>
+					<input type="hidden" name="widget_error" value="<?php echo esc_attr( $instance[ 'failure_message' ] ); ?>"/>
+					<input type="hidden" name="widget_success" value="<?php echo esc_attr( $instance[ 'success_message' ] ); ?>"/>
+					<input type="hidden" name="widget_id" value="<?php echo esc_attr( $this->id_base ); ?>"/>
+					<input type="hidden" name="widget_number" value="<?php echo esc_attr( $this->indexShortcode ); ?>"/>
 					<input type="hidden" name="mp_am_type" value="shortcode"/>
-					<input type="hidden" name="shortcode_mailing_list_id" value="<?php echo $instance[ 'current_mailing_list' ] ?>"/>
+					<input type="hidden" name="shortcode_mailing_list_id" value="<?php echo esc_attr( $instance[ 'current_mailing_list' ] ); ?>"/>
 					<?php if ( $instance[ 'showplaceholder' ] ) { ?>
 						<p>
-							<label><input placeholder="<?php echo $instance[ 'email_text' ] ?>" required id="<?php echo $this->id_base; ?>_email_<?php echo $this->indexShortcode; ?>" type="email" name="<?php echo $this->id_base; ?>_email"/></label>
+							<label><input placeholder="<?php echo esc_attr( $instance[ 'email_text' ] ); ?>" required id="<?php echo esc_attr( $this->id_base ); ?>_email_<?php echo esc_attr( $this->indexShortcode ); ?>" type="email" name="<?php echo esc_attr( $this->id_base ); ?>_email"/></label>
 						</p>
 					<?php } else { ?>
 						<p>
-							<label for="<?php echo $this->id_base; ?>_email_<?php echo $this->indexShortcode; ?>"><?php echo $instance[ 'email_text' ] ?></label>
-							<input id="<?php echo $this->id_base; ?>_email_<?php echo $this->indexShortcode; ?>" required type="email" name="<?php echo $this->id_base . '_email' ?>"/>
+							<label for="<?php echo esc_attr( $this->id_base ); ?>_email_<?php echo esc_attr( $this->indexShortcode ); ?>"><?php echo esc_html( $instance[ 'email_text' ] ); ?></label>
+							<input id="<?php echo esc_attr( $this->id_base ); ?>_email_<?php echo esc_attr( $this->indexShortcode ); ?>" required type="email" name="<?php echo esc_attr( $this->id_base . '_email' ); ?>"/>
 						</p>
 					<?php } ?>
-					<p><input class="mpam-submit button" type="submit" name="<?php echo strtolower( $instance[ 'signup_text' ] ); ?>" value="<?php echo $instance[ 'signup_text' ]; ?>"/></p>
+					<p><input class="mpam-submit button" type="submit" name="<?php echo esc_attr( strtolower( $instance[ 'signup_text' ] ) ); ?>" value="<?php echo esc_attr( $instance[ 'signup_text' ] ); ?>"/></p>
 				</form>
 			</div>
 		<?php }
