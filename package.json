@@ -1,0 +1,13 @@
+{
+  "name": "another-mailchimp-widget",
+  "private": true,
+  "scripts": {
+    "build": "terser assets/js/another-mailchimp.js --compress --mangle --output assets/js/another-mailchimp.min.js",
+    "test": "node --test tests/frontend.test.cjs"
+  },
+  "devDependencies": {
+    "jquery": "3.7.1",
+    "jsdom": "26.1.0",
+    "terser": "5.44.1"
+  }
+}

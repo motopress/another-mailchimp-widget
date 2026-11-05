@@ -62,25 +62,18 @@ function an_mc_add_plugin( $plugin_array ) {
 }
 
 function an_mc_admin_head() {
-	?>
-	<script type="text/javascript">
-		var an_mc_dialog_url = "<?php
-			echo esc_url(
-				add_query_arg(
-					array(
-						'action' => 'an_mc_get_modal_content',
-						'_wpnonce' => wp_create_nonce( 'an_mc_get_modal_content' )
-					),
-					admin_url( 'admin-post.php' )
-				)
-			);
-		?>";
-	</script>
-	<?php
+	$url = add_query_arg( array(
+		'action' => 'an_mc_get_modal_content',
+		'_wpnonce' => wp_create_nonce( 'an_mc_get_modal_content' ),
+	), admin_url( 'admin-post.php' ) );
+	echo '<script type="text/javascript">var an_mc_dialog_url = ' . wp_json_encode( $url, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ) . ';</script>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 }
- 
+
 function an_mc_get_modal_content() {
 
+	if ( ! current_user_can( 'edit_posts' ) && ! current_user_can( 'edit_pages' ) ) {
+		wp_die( esc_html__( 'You are not allowed to edit content.', 'another-mailchimp-widget' ) );
+	}
 	check_admin_referer( 'an_mc_get_modal_content' );
 
 	include Another_mailChimp_widget::get_plugin_dir() . '/shortcodes/forms/an_shortcode_mailchimp.php';

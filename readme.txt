@@ -2,9 +2,10 @@
 Contributors: jameslafferty, MotoPress
 Donate link: https://motopress.com/
 Tags: newsletter, mailchimp, mailchimp widget, mailchimp subscribe, mailchimp shortcode
-Requires at least: 3.8
-Tested up to: 6.9
-Stable tag: 2.1.0
+Requires at least: 6.9
+Requires PHP: 7.4
+Tested up to: 7.1
+Stable tag: 2.2.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -46,7 +47,23 @@ Based on [jameslafferty](https://profiles.wordpress.org/jameslafferty/) ["Mailch
 
 == Frequently Asked Questions ==
 
+== Upgrade Notice ==
+
+= 2.2.0 =
+After updating, purge page caches once so forms include the signed configuration. Legacy unsigned forms and GET subscription requests are rejected. Existing widget settings and shortcode attributes are preserved. Requires WordPress 6.9 or later and PHP 7.4–8.5.
+
 == Changelog ==
+
+= 2.2.0, Nov 5 2026 =
+* Improved PHP 7.4–8.5 compatibility, including fixes for dynamic property deprecations.
+* Updated minimum requirements to WordPress 6.9 and PHP 7.4.
+* Security - signed form settings, POST-only subscriptions, TLS certificate verification, and improved admin permission and nonce checks.
+* Fixed subscription failures with missing API credentials and incorrect success messages when a mailing list subscription fails.
+* Fixed synchronization of accounts with more than 100 lists, categories, or interests, and refreshed cached lists when API credentials change.
+* Fixed shortcode boolean defaults, duplicate form submissions, network error recovery, and quoted attributes in the shortcode editor.
+* Improved form accessibility with unique field IDs and accessible labels.
+* Removed shortcode settings writes during rendering and corrected widget registration, translation loading, and template rendering.
+* Added automated WordPress integration and frontend regression tests.
 
 = 2.1.0, Nov 23 2021 =
 * Security - sanitization and escaping.

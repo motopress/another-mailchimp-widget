@@ -21,7 +21,7 @@ $an_mc_plugin_url = Another_mailChimp_widget::get_instance()->get_plugin_url();
 
 	<script language="javascript" type="text/javascript" src="<?php echo esc_url( $includes_url ); ?>/js/tinymce/tiny_mce_popup.js"></script>
 	<script language="javascript" type="text/javascript" src="<?php echo esc_url( $includes_url ); ?>/js/jquery/jquery.js"></script>
-	<script language="javascript" type="text/javascript" src="<?php echo esc_url( $an_mc_plugin_url ); ?>assets/js/shortcode-popup.js"></script>
+	<script language="javascript" type="text/javascript" src="<?php echo esc_url( add_query_arg( 'ver', AN_MC_PLUGIN_VERSION . '.' . filemtime( Another_mailChimp_widget::get_plugin_dir() . 'assets/js/shortcode-popup.js' ), $an_mc_plugin_url . 'assets/js/shortcode-popup.js' ) ); ?>"></script>
 	<base target="_self"/>
 
 	<style type="text/css">
@@ -34,7 +34,7 @@ $an_mc_plugin_url = Another_mailChimp_widget::get_instance()->get_plugin_url();
 <?php
 if ( ! $an_mc_api_key ) {
 	AN_MC_View::get_instance()->get_template( '/notice/change-settings', array( 'target' => 'target="_blank"' ) );
-} elseif ( ! is_array( $an_mc_lists ) ) { ?>
+} elseif ( ! is_array( $an_mc_lists ) || isset( $an_mc_lists['error'] ) ) { ?>
 	<p><?php esc_html_e( 'You need to configure Mailchimp settings first.', 'another-mailchimp-widget' ) ?></p>
 <?php } else { ?>
 	<form name="buttons" action="#">
@@ -81,7 +81,7 @@ if ( ! $an_mc_api_key ) {
 			<label for="failure_message"><?php esc_html_e( 'Failure message', 'another-mailchimp-widget' ); ?></label>
 			<textarea class="properties" id="failure_message" name="failure_message"><?php esc_html_e( 'There was a problem processing your submission.', 'another-mailchimp-widget' ); ?></textarea>
 		</p>
-		<p><input type="submit" id="insert" name="insert" value="<?php esc_attr_e( 'Insert', 'another-mailchimp-widget' ); ?>" onClick="an_mc_submit();"/></p>
+		<p><input type="submit" id="insert" name="insert" value="<?php esc_attr_e( 'Insert', 'another-mailchimp-widget' ); ?>" onClick="return an_mc_submit();"/></p>
 	</form>
 <?php } ?>
 </body>

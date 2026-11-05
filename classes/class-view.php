@@ -38,14 +38,14 @@ class AN_MC_View {
 	 * @param array $data
 	 */
 	function render_template( $template = null, $data = null ) {
-		$this->template = $template;
-		if ( is_array( $data ) ) {
-			extract( $data );
+		if ( ! is_string( $template ) || '' === $template ) {
+			return;
 		}
+		$this->template = $template;
 		$this->data = $data;
-		include_once( $this->templates_path . 'index.php' );
+		$this->get_template( $template, is_array( $data ) ? $data : array() );
 	}
-	
+
 	/**
 	 * Render html
 	 *
@@ -57,26 +57,15 @@ class AN_MC_View {
 	 */
 	
 	public function render_html( $template, $data = null, $output = true ) {
-		$includeFile = $this->templates_path . $template . '.php';
-		ob_start();
-		
-		if ( is_array( $data ) ) {
-			extract( $data );
-		}
-		
 		$this->data = $data;
-		
-		include( $includeFile );
-		
-		$out = ob_get_clean();
-		
+		$out = $this->get_template_html( $template, is_array( $data ) ? $data : array() );
 		if ( $output ) {
 			echo $out; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		} else {
 			return $out;
 		}
 	}
-	
+
 	/**
 	 * Get template part theme/plugin
 	 *
@@ -103,6 +92,10 @@ class AN_MC_View {
 			$template = locate_template( array( "{$slug}.php", $this->template_path . "{$slug}.php" ) );
 		}
 		
+		if ( ! $template && file_exists( $this->templates_path . $slug . '.php' ) ) {
+			$template = $this->templates_path . $slug . '.php';
+		}
+
 		// Allow 3rd party plugins to filter template file from their plugin.
 		$template = apply_filters( $this->prefix . '_get_template_part', $template, $slug, $name );
 		
@@ -141,7 +134,7 @@ class AN_MC_View {
 		$template_name = $template_name . '.php';
 		
 		if ( ! empty( $args ) && is_array( $args ) ) {
-			extract( $args );
+			extract( $args, EXTR_SKIP );
 		}
 		
 		$located = $this->locate_template( $template_name, $template_path, $default_path );

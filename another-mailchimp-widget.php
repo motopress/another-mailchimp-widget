@@ -4,7 +4,9 @@
  * Plugin URI: https://motopress.com/products/another-mailchimp-widget/
  * Description: Simple Mailchimp subscription form to your lists and groups.
  * Author: MotoPress
- * Version: 2.1.0
+ * Requires at least: 6.9
+ * Requires PHP: 7.4
+ * Version: 2.2.0
  * Author URI: https://motopress.com/
  * License: GPL2
  * Text Domain: another-mailchimp-widget
@@ -12,14 +14,16 @@
  */
 
 if ( ! defined( 'AN_MC_PLUGIN_VERSION' ) ) {
-	define( 'AN_MC_PLUGIN_VERSION', '2.1.0' );
+	define( 'AN_MC_PLUGIN_VERSION', '2.2.0' );
 }
 
 if ( ! defined( 'AN_MC_PLUGIN_FILE' ) ) {
 	define( 'AN_MC_PLUGIN_FILE', __FILE__ );
 }
 
-register_activation_hook( __FILE__, array( Another_mailChimp_widget::get_instance(), 'on_activation' ) );
+register_activation_hook( __FILE__, function () {
+	Another_mailChimp_widget::get_instance()->on_activation();
+} );
 add_action( 'plugins_loaded', array( 'Another_mailChimp_widget', 'get_instance' ) );
 
 /**
@@ -37,7 +41,6 @@ class Another_mailChimp_widget {
 		spl_autoload_register( array( $this, 'buffered_autoloader' ) );
 		
 		$this->include_all();
-		$this->init();
 
 		if ( ! defined( 'AN_MC_TEMPLATE_PATH' ) ) {
 			define( 'AN_MC_TEMPLATE_PATH', $this->template_path() );
@@ -48,6 +51,7 @@ class Another_mailChimp_widget {
 		if ( ! defined( 'AN_MC_TEMPLATES_PATH' ) ) {
 			define( 'AN_MC_TEMPLATES_PATH', $this::get_plugin_dir() . 'templates/' );
 		}
+		$this->init();
 		
 	}
 	
@@ -62,7 +66,8 @@ class Another_mailChimp_widget {
 
 		include $plugin_dir . 'functions/functions.php';
 		
-		include $plugin_dir . 'lib/an_mc_plugin.class.php';
+		require_once $plugin_dir . 'lib/an_mc_form.class.php';
+		require_once $plugin_dir . 'lib/an_mc_plugin.class.php';
 		
 		include_once $plugin_dir . 'shortcodes/registrator.php';
 		
@@ -107,7 +112,6 @@ class Another_mailChimp_widget {
 	 * init plugin data
 	 */
 	public function init() {
-		spl_autoload_register( array( $this, 'buffered_autoloader' ) );
 		AN_MC_Plugin::get_instance()->init_action();
 	}
 	
@@ -168,14 +172,16 @@ class Another_mailChimp_widget {
 	 * @return string
 	 */
 	public function buffered_autoloader( $class ) {
-		try {
-			set_include_path( get_include_path() . PATH_SEPARATOR . realpath( $this::get_plugin_dir() . '/lib/' ) );
-			spl_autoload( $class, '.class.php' );
-			ini_restore('include_path');
-		} catch ( Exception $e ) {
-			$message = $e->getMessage();
-			
-			return $message;
+		$classes = array(
+			'an_mc_plugin' => 'an_mc_plugin.class.php',
+			'an_widget_mailchimp' => 'an_widget_mailchimp.class.php',
+			'mailchimp_api' => 'mailchimp_api.class.php',
+			'widget_default_an_mc' => 'Default_MC.php',
+			'an_mc_form' => 'an_mc_form.class.php',
+		);
+		$key = strtolower( $class );
+		if ( isset( $classes[ $key ] ) ) {
+			require_once self::get_plugin_dir() . 'lib/' . $classes[ $key ];
 		}
 	}
 }

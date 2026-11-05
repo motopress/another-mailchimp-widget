@@ -2,6 +2,12 @@ function an_mc_init() {
 	tinyMCEPopup.resizeToInnerSize();
 }
 
+function an_mc_shortcode_attribute(value) {
+	return String(value).replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+		.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+		.replace(/\[/g, '&#91;').replace(/\]/g, '&#93;').replace(/[\r\n]+/g, ' ');
+}
+
 function an_mc_submit() {
 
 	var shortcode;
@@ -30,7 +36,7 @@ function an_mc_submit() {
 	var first_name_text = jQuery('#first_name_text').val();
 	var last_name_text = jQuery('#last_name_text').val();
 
-	shortcode = ' [mp-mc-form list="' + current_mailing_list + '" button="' + signup_text + '" email_text="' + email_text + '" first_name_text="' + first_name_text + '" last_name_text="' + last_name_text + '" placeholder="' + showplaceholder + '" firstname="' + collect_first + '" lastname="' + collect_last + '" success="' + success_message + '" failure="' + failure_message + '" ]';
+	shortcode = ' [mp-mc-form list="' + an_mc_shortcode_attribute(current_mailing_list.join(',')) + '" button="' + an_mc_shortcode_attribute(signup_text) + '" email_text="' + an_mc_shortcode_attribute(email_text) + '" first_name_text="' + an_mc_shortcode_attribute(first_name_text) + '" last_name_text="' + an_mc_shortcode_attribute(last_name_text) + '" placeholder="' + showplaceholder + '" firstname="' + collect_first + '" lastname="' + collect_last + '" success="' + an_mc_shortcode_attribute(success_message) + '" failure="' + an_mc_shortcode_attribute(failure_message) + '" ]';
 
 	if (window.tinyMCE) {
 		var id = 'content';
@@ -39,10 +45,12 @@ function an_mc_submit() {
 			id = tinyMCE.activeEditor.editorId;
 		}
 
-		window.tinyMCE.execCommand('mceInsertContent', false, shortcode);
+		// Insert as HTML text so TinyMCE cannot decode attribute delimiters prematurely.
+		var shortcode_html = shortcode.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+		window.tinyMCE.execCommand('mceInsertContent', false, shortcode_html);
 		tinyMCEPopup.editor.execCommand('mceRepaint');
 		tinyMCEPopup.close();
 	}
 
-	return;
+	return false;
 }

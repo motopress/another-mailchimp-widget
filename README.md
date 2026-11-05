@@ -8,6 +8,10 @@
 
 This WordPress plugin lets your users sign up for your Mailchimp lists and groups via subscription form added through widget or shortcode.
 
+Requires WordPress 6.9 or later and supports PHP 7.4–8.5.
+
+After updating, purge page caches once. Subscription forms now submit signed settings over POST; previously cached unsigned forms and GET subscription requests are rejected. No settings migration or new configuration is required. Signatures protect form configuration integrity, not against automated submissions.
+
 ## Getting started ##
 1. You can clone the GitHub repository: `https://github.com/motopress/another-mailchimp-widget.git`.
 1. Or download it directly as a ZIP file: `https://github.com/motopress/another-mailchimp-widget/archive/master.zip`.

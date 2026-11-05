@@ -17,7 +17,7 @@ class AN_MC_Plugin {
 	 * AN_MC_Plugin constructor.
 	 */
 	private function __construct() {
-		self::load_text_domain();
+
 		// Fetch the options, and, if they haven't been set up yet, display a notice to the user.
 		$this->get_options();
 	}
@@ -35,7 +35,8 @@ class AN_MC_Plugin {
 	 * @return mixed
 	 */
 	public function get_options() {
-		$this->options = get_option( self::$prefix . '_options' );
+		$options = get_option( self::$prefix . '_options' );
+		$this->options = is_array( $options ) ? $options : array();
 		
 		return $this->options;
 	}
@@ -55,6 +56,9 @@ class AN_MC_Plugin {
 	 *  Init action
 	 */
 	public function init_action() {
+		add_action( 'init', array( $this, 'load_text_domain' ), 0 );
+		add_action( 'parse_request', array( 'AN_MC_Form', 'process_submission' ) );
+		add_action( 'update_option_' . self::$prefix . '_options', array( $this, 'credentials_changed' ), 10, 2 );
 		// Set up the settings.
 		add_action( 'admin_init', array( &$this, 'register_settings' ) );
 		// Set up the administration page.
@@ -70,7 +74,7 @@ class AN_MC_Plugin {
 		$settings_page_url = admin_url( 'options-general.php?page=another-mailchimp-widget/lib/an_mc_plugin.class.php' );
 
 		$plugin_links = array(
-			'<a href=' . esc_url( $settings_page_url ) . '>' . esc_html__( 'Settings', 'another-mailchimp-widget' ) . '</a>'
+			'<a href="' . esc_url( $settings_page_url ) . '">' . esc_html__( 'Settings', 'another-mailchimp-widget' ) . '</a>'
 		);
 
 		return array_merge( $links, $plugin_links );
@@ -97,7 +101,7 @@ class AN_MC_Plugin {
 			
 			$last_query = get_transient( 'mp-am-last-action-data' );
 			
-			if ( ! empty( $last_query ) && $last_query[ 'mpam_sync' ] ) {
+			if ( is_array( $last_query ) && ! empty( $last_query[ 'mpam_sync' ] ) ) {
 				if ( ! empty( $last_query[ 'errorMessage' ] ) ) {
 					$class = 'notice-error';
 				} else {
@@ -124,21 +128,25 @@ class AN_MC_Plugin {
 	 * Dismiss admin Notice
 	 */
 	public function dismiss_admin_notice() {
-		global $current_user;
-		$userid = $current_user->ID;
-		if ( isset( $_GET[ 'dismiss_another-mailchimp' ] ) && 'yes' == $_GET[ 'dismiss_another-mailchimp' ] ) {
-			add_user_meta( $userid, 'ignore_error_notice', 'yes', true );
+		if ( ! current_user_can( 'manage_options' ) || ! isset( $_GET['dismiss_another-mailchimp'], $_GET['_wpnonce'] )
+			|| 'yes' !== $_GET['dismiss_another-mailchimp'] || ! is_string( $_GET['_wpnonce'] )
+			|| ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'an_mc_dismiss_notice' ) ) {
+			return;
 		}
+		add_user_meta( get_current_user_id(), 'ignore_error_notice', 'yes', true );
 	}
-	
+
 	/**
 	 * Admin notice
 	 */
 	public function admin_notices() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
 		global $current_user;
 		$userid = $current_user->ID;
 		if ( ! get_user_meta( $userid, 'ignore_error_notice' ) ) {
-			echo '<div class="notice error fade  is-dismissible">' . $this->get_admin_notices() . '<p><a href="' . esc_url( add_query_arg( 'dismiss_another-mailchimp', 'yes' ) ) . '">' . esc_html__( 'Dismiss this notice', 'another-mailchimp-widget' ) . '</a></p></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			echo '<div class="notice error fade  is-dismissible">' . $this->get_admin_notices() . '<p><a href="' . esc_url( wp_nonce_url( add_query_arg( 'dismiss_another-mailchimp', 'yes' ), 'an_mc_dismiss_notice' ) ) . '">' . esc_html__( 'Dismiss this notice', 'another-mailchimp-widget' ) . '</a></p></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		}
 	}
 	
@@ -160,26 +168,14 @@ class AN_MC_Plugin {
 	 * @return bool|void
 	 */
 	public function admin_page() {
-		$api_key = ( is_array( $this->options ) ) ? $this->options[ 'api-key' ] : '';
-		if ( isset( $_POST[ self::$prefix . '_nonce' ] ) ) {
-			
-			$nonce     = sanitize_text_field( wp_unslash( $_POST[ self::$prefix . '_nonce' ] ) );
-			$nonce_key = self::$prefix . '_update_options';
-			
-			if ( ! wp_verify_nonce( $nonce, $nonce_key ) ) { ?>
-				<div class="wrap">
-					<div id="icon-options-general" class="icon32"><br/></div>
-					<h2><?php esc_html_e( 'Mailchimp Settings', 'another-mailchimp-widget' ); ?></h2>
-					<p><?php esc_html_e( 'What you\'re trying to do looks a little shady.', 'another-mailchimp-widget' ); ?></p>
-				</div>
-				<?php return;
-			} else {
-				$new_api_key              = sanitize_text_field( wp_unslash( $_POST[ self::$prefix . '-api-key' ] ) );
-				$new_options[ 'api-key' ] = $new_api_key;
-				$this->update_options( $new_options );
-				$api_key = $this->options[ 'api-key' ];
-			}
-		} ?>
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You are not allowed to manage these settings.', 'another-mailchimp-widget' ) );
+		}
+		$this->get_options();
+		$api_key = $this->get_api_key();
+		$HTTP_Code = 0;
+		$mcapi = false;
+		?>
 		<div class="wrap">
 			<div id="icon-options-general" class="icon32"><br/></div>
 			<h2><?php esc_html_e( 'Mailchimp Settings', 'another-mailchimp-widget' ); ?></h2>
@@ -197,7 +193,7 @@ class AN_MC_Plugin {
 							endif; ?>
 							<input class="regular-text" id="<?php echo esc_attr( self::$prefix ); ?>-api-key" name="<?php echo esc_attr( self::$prefix ); ?>_options[api-key]" type="password" value="<?php echo esc_attr( $api_key ); ?>" autocomplete="new-password"/>
 							
-							<?php if ( ! empty( $HTTP_Code ) && ( $HTTP_Code != 200 ) ): ?>
+							<?php if ( $mcapi && $mcapi->errors ): ?>
 								<br/>
 								<i><?php echo wp_kses_post( $mcapi->get_response_message() ); ?></i>
 							<?php endif; ?>
@@ -215,14 +211,14 @@ class AN_MC_Plugin {
 						</tr>
 						<?php
 							$lists = $mcapi->get_account_subscribe_lists();
-							if ( !empty($lists) ) {?>
+							if ( is_array( $lists ) && ! empty( $lists ) && ! isset( $lists['error'] ) ) {?>
 							<tr valign="top">
 								<th scope="row">
 									<?php esc_html_e( 'Mailchimp Lists and Groups', 'another-mailchimp-widget' ); ?>
 								</th>
 								<td><?php
 									
-									if ( !empty($lists) ) {?>
+									if ( is_array( $lists ) && ! empty( $lists ) && ! isset( $lists['error'] ) ) {?>
 										<p class="description"><?php esc_html_e( 'Use these List ID / Group ID in the shortcode as described below. ', 'another-mailchimp-widget' ); ?></p>
 										<ul>
 										<?php
@@ -282,29 +278,17 @@ class AN_MC_Plugin {
 	<?php }
 	
 	/**
-	 * Update options
-	 *
-	 * @param $options_values
-	 */
-	private function update_options( $options_values ) {
-		$old_options_values = get_option( self::$prefix . '_options' );
-		$new_options_values = wp_parse_args( $options_values, $old_options_values );
-		update_option( self::$prefix . '_options', $new_options_values );
-		
-		$this->get_options();
-	}
-	
-	/**
 	 * Get MailChimp API3
 	 *
 	 * @return bool|MailChimp_API
 	 */
 	public function get_mcapi() {
+		$this->get_options();
 		$api_key = $this->get_api_key();
 		if ( false == $api_key ) {
 			return false;
 		} else {
-			if ( empty( self::$mcapi ) ) {
+			if ( empty( self::$mcapi ) || self::$mcapi->api_key !== $api_key ) {
 				self::$mcapi = new MailChimp_API( $api_key );
 			}
 			
@@ -318,7 +302,7 @@ class AN_MC_Plugin {
 	 * @return bool|mixed
 	 */
 	private function get_api_key() {
-		if ( is_array( $this->options ) && ! empty( $this->options[ 'api-key' ] ) ) {
+		if ( is_array( $this->options ) && ! empty( $this->options[ 'api-key' ] ) && is_string( $this->options[ 'api-key' ] ) ) {
 			return $this->options[ 'api-key' ];
 		} else {
 			return false;
@@ -348,7 +332,7 @@ class AN_MC_Plugin {
 		if ( $error === 104 || $error == 106 ) {
 			$notice = AN_MC_View::get_instance()->get_template_html( '/notice/invalid-api-key' );
 		} else {
-			$notice = '<p>' . $mcapi->errorMessage . '</p>';
+			$notice = '<p>' . esc_html( $mcapi->errorMessage ) . '</p>';
 		}
 		
 		return $notice;
@@ -373,7 +357,7 @@ class AN_MC_Plugin {
 	 */
 	public function set_up_admin_page() {
 		add_submenu_page( 'options-general.php', esc_html__( 'Mailchimp', 'another-mailchimp-widget' ), esc_html__( 'Mailchimp', 'another-mailchimp-widget' ),
-			'activate_plugins', __FILE__, array( &$this, 'admin_page' ) );
+			'manage_options', __FILE__, array( &$this, 'admin_page' ) );
 	}
 	
 	/**
@@ -388,7 +372,7 @@ class AN_MC_Plugin {
 	 */
 	public function add_scripts() {
 		if ( ! is_admin() ) {
-			wp_enqueue_script( 'ns-mc-widget', AN_MC_PLUGIN_URL . 'assets/js/another-mailchimp.min.js', array( 'jquery' ), AN_MC_PLUGIN_VERSION, true );
+			wp_enqueue_script( 'ns-mc-widget', AN_MC_PLUGIN_URL . 'assets/js/another-mailchimp.min.js', array( 'jquery' ), AN_MC_PLUGIN_VERSION . '.' . filemtime( __DIR__ . '/../assets/js/another-mailchimp.min.js' ), true );
 		}
 	}
 	
@@ -404,42 +388,54 @@ class AN_MC_Plugin {
 	 * @return mixed
 	 */
 	public function save_settings( $settings ) {
-		if ( isset( $settings[ 'mpam_sync' ] ) && $settings[ 'mpam_sync' ] ) {
-			$data = array( 'mpam_sync' => true );
-			
-			$mcapi = $this->get_mcapi();
-			
-			if ( is_object( $mcapi ) ) {
-				
-				$request_api_key = isset( $_POST[ 'ns_mc_options' ][ 'api-key' ] ) ?
-					sanitize_text_field( wp_unslash( $_POST[ 'ns_mc_options' ][ 'api-key' ] ) ) : false;
-
-				$api_key         = $this->get_api_key();
-				
-				if ( $api_key !== $request_api_key && $request_api_key ) {
-					$mcapi->set_apikey( $request_api_key );
-				}
-				
-				$lists               = $mcapi->get_lists();
-				$data[ 'HTTP_Code' ] = $mcapi->HTTP_Code;
-				
-				
-				if ( ! empty( $lists ) && empty( $lists[ 'error' ] ) ) {
-					$account_subscribe_lists = $mcapi->get_account_subscribe_lists( true );
-				}
-				
-				if ( ! empty( $account_subscribe_lists ) ) {
-					update_option( self::$prefix . '_account_subscribe_lists', $account_subscribe_lists );
-					
-					$data[ 'list_count' ] = count( $account_subscribe_lists );
-					$data[ 'message' ]    = sprintf( _n( '%s list updated.', '%s lists updated.', $data[ 'list_count' ], 'another-mailchimp-widget' ), $data[ 'list_count' ] );
-				}
-				
+		if ( ! is_array( $settings ) || ! isset( $settings['api-key'] ) || ! is_string( $settings['api-key'] ) ) {
+			return $this->get_options();
+		}
+		$api_key = sanitize_text_field( $settings['api-key'] );
+		$api_key = trim( $api_key );
+		if ( '' !== $api_key && ! preg_match( '/^[a-zA-Z0-9]+-us[0-9]+$/D', $api_key ) ) {
+			if ( function_exists( 'add_settings_error' ) ) {
+				add_settings_error( self::$prefix . '_options', 'invalid_api_key', __( 'Invalid Mailchimp API key', 'another-mailchimp-widget' ) );
 			}
-			$data[ 'errorMessage' ] = $mcapi->errorMessage;
+			return $this->get_options();
+		}
+		$old = $this->get_options();
+		$changed = $api_key !== ( isset( $old['api-key'] ) ? $old['api-key'] : '' );
+		if ( $changed ) {
+			$this->clear_list_cache();
+		}
+		if ( ! empty( $settings['mpam_sync'] ) ) {
+			$data = array( 'mpam_sync' => true, 'errorMessage' => '' );
+			$mcapi = new MailChimp_API( $api_key );
+			$lists = $mcapi->get_account_subscribe_lists( true );
+			$data['HTTP_Code'] = $mcapi->HTTP_Code;
+			if ( isset( $lists['error'] ) ) {
+				$data['errorMessage'] = $lists['error'];
+			} else {
+				$data['list_count'] = count( $lists );
+				$data['message'] = sprintf( _n( '%s list updated.', '%s lists updated.', count( $lists ), 'another-mailchimp-widget' ), count( $lists ) );
+			}
 			set_transient( 'mp-am-last-action-data', $data, 5 * MINUTE_IN_SECONDS );
 		}
-		
-		return $settings;
+		return array( 'api-key' => $api_key );
+	}
+
+	private function clear_list_cache() {
+		delete_option( self::$prefix . '_account_subscribe_lists' );
+		delete_option( self::$prefix . '_account_subscribe_lists_key' );
+	}
+
+	/** Also handle credential changes made outside the settings screen. */
+	public function credentials_changed( $old, $new ) {
+		$old_key = is_array( $old ) && isset( $old['api-key'] ) ? $old['api-key'] : '';
+		$new_key = is_array( $new ) && isset( $new['api-key'] ) ? $new['api-key'] : '';
+		if ( $old_key !== $new_key ) {
+			self::$mcapi = null;
+			// A synchronization during sanitization may already have populated the new cache.
+			if ( ! is_string( $new_key ) || hash( 'sha256', $new_key ) !== get_option( self::$prefix . '_account_subscribe_lists_key' ) ) {
+				$this->clear_list_cache();
+			}
+		}
+		$this->get_options();
 	}
 }

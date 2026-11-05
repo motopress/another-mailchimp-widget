@@ -1,68 +1,61 @@
 (function($) {
 	'use strict';
 
+	// Retain the public jQuery helper without registering another handler per click.
 	$.fn.an_mc_subscribe_to_mail_chimp = function(options) {
-		var defaults, eL, opts;
-
-		defaults = {
-			'url': '/'
-		};
-
-		opts = jQuery.extend(defaults, options);
-
-		eL = $(this);
-
-		var valid_form = eL[0].checkValidity();
-
-		if (valid_form) {
-			eL.submit(function() {
-				var ajax_loader = eL.find('.mpam-submit');
-				ajax_loader.addClass('mp-am-preloader');
-
-				$.getJSON(opts.url, eL.serialize(), function(data, textStatus) {
-					var error_container;
-
-					if ('success' === textStatus) {
-						if (true === data.success) {
-							ajax_loader.removeClass('mp-am-preloader');
-							eL.html('<p class="notification success">' + data.success_message + '</p>');
-						} else {
-							ajax_loader.removeClass('mp-am-preloader');
-
-							error_container = jQuery('.error', eL);
-
-							if (0 === error_container.length) {
-								error_container = jQuery('<p class="notification error"></p>');
-								error_container.prependTo(eL);
-							}
-
-							error_container.html(data.error);
-						}
-					}
-					return false;
-				});
-				return false;
-			});
-		}
-	};
-}(jQuery));
-
-(function($) {
-	"use strict";
-	$(document).ready(function() {
-
-		$(document).on('click.another_mp_am', 'form input[type="submit"].mpam-submit', function(e) {
-
-			var $form = $(this).closest("form");
-			var id = $form.data('id');
-			var url = $form.data('url');
-
-			$form.an_mc_subscribe_to_mail_chimp({
-				id: id,
-				url: url
-			});
-
+		return this.each(function() {
+			$(this).data('anMcOptions', $.extend({}, options));
 		});
+	};
 
+	$(document).on('submit.another_mp_am', 'form[data-id][data-url]', function(event) {
+		var form = this;
+		var $form = $(form);
+		if (!$form.find('input[name="an_mc_submit"]').length) {
+			return;
+		}
+		event.preventDefault();
+		if ($form.data('anMcBusy')) {
+			return;
+		}
+		if (!form.checkValidity()) {
+			form.reportValidity();
+			return;
+		}
+
+		var options = $form.data('anMcOptions') || {};
+		var $buttons = $form.find('.mpam-submit');
+		var fallback = $form.attr('data-error');
+		var fields = $form.serialize();
+		$form.data('anMcBusy', true);
+		$buttons.addClass('mp-am-preloader').prop('disabled', true);
+
+		function showError(message) {
+			var $error = $form.find('.notification.error');
+			if (!$error.length) {
+				$error = $('<p class="notification error" role="alert"></p>').prependTo($form);
+			}
+			// Messages originate from the server-sanitized, signed configuration.
+			$error.html(typeof message === 'string' ? message : fallback);
+		}
+
+		$.ajax({
+			url: options.url || $form.attr('data-url'),
+			method: 'POST',
+			dataType: 'json',
+			data: fields,
+			timeout: 60000
+		}).done(function(data) {
+			if (data && data.success === true && typeof data.success_message === 'string') {
+				$form.empty().append($('<p class="notification success" role="status"></p>').html(data.success_message));
+			} else {
+				showError(data && data.error);
+			}
+		}).fail(function() {
+			showError(fallback);
+		}).always(function() {
+			$form.data('anMcBusy', false);
+			$buttons.removeClass('mp-am-preloader').prop('disabled', false);
+		});
 	});
 }(jQuery));

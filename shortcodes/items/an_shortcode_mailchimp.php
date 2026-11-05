@@ -25,7 +25,7 @@ function an_shortcode_mailchimp_function( $params, $content = null ) {
 		'lastname'        => false,
 		'success'         => esc_html__( 'Thank you for joining our mailing list.', 'another-mailchimp-widget' ),
 		'failure'         => esc_html__( 'There was a problem processing your submission.', 'another-mailchimp-widget' )
-	), $params ) );
+	), is_array( $params ) ? $params : array() ), EXTR_SKIP );
 	
 	ob_start();
 	
@@ -35,13 +35,21 @@ function an_shortcode_mailchimp_function( $params, $content = null ) {
 		'first_name_text'      => $first_name_text,
 		'last_name_text'       => $last_name_text,
 		'email_text'           => $email_text,
-		'showplaceholder'      => ( $placeholder == 'false' ) ? false : true,
-		'collect_first'        => ( $firstname == 'false' ) ? false : true,
-		'collect_last'         => ( $lastname == 'false' ) ? false : true,
+		'showplaceholder'      => AN_MC_Form::boolean( $placeholder, true ),
+		'collect_first'        => AN_MC_Form::boolean( $firstname ),
+		'collect_last'         => AN_MC_Form::boolean( $lastname ),
 		'success_message'      => $success,
 		'failure_message'      => $failure
 	);
 	
+	// The editor popup entity-encodes quotes/brackets inside attribute values.
+	foreach ( $instance as $key => $value ) {
+		if ( is_string( $value ) ) {
+			// TinyMCE serializes the entity text as HTML; direct shortcodes need one decode.
+			$instance[ $key ] = html_entity_decode( html_entity_decode( $value, ENT_QUOTES, 'UTF-8' ), ENT_QUOTES, 'UTF-8' );
+		}
+	}
+
 	$shMailChimp = new AN_Shortcode_MailChimp( $instance, $index_sh );
 	
 	$shMailChimp->get_MailChimp( $instance );

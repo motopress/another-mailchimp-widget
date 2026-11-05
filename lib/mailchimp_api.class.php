@@ -3,405 +3,275 @@ if ( class_exists( 'MailChimp_API' ) ) {
 	return;
 }
 
-/**
- * Class MailChimp_API
- */
+/** Mailchimp Marketing API client. Errors use the existing array('error' => message) contract. */
 class MailChimp_API {
-	
 	protected static $instance;
-	/**
-	 * Cache the user api_key so we only have to log in once per client instantiation
-	 */
-	var $api_key;
-	var $url;
-	var $username;
-	var $dc;
-	var $version = '3.0';
-	var $errors = false;
-	var $HTTP_Code;
-	var $default_error_HTTP_Code = 400;
-	var $errorMessage;
-	var $show_all_params = 'count=100&offset=0';
-	
-	/**
-	 * Connect to the MailChimp API for a given list.
-	 *
-	 * @param string $apikey Your MailChimp apikey $secure Whether or not this should use a secure connection
-	 */
+	public $api_key = '';
+	public $url = '';
+	public $username = '';
+	public $dc = '';
+	public $version = '3.0';
+	public $errors = false;
+	public $HTTP_Code = 0;
+	public $default_error_HTTP_Code = 400;
+	public $errorMessage = '';
+	public $show_all_params = 'count=100&offset=0';
+
 	public function __construct( $apikey = '' ) {
 		$this->setup_api_key( $apikey );
 	}
-	
-	/** Setup api key
-	 *
-	 * @param $apikey
-	 */
+
 	protected function setup_api_key( $apikey ) {
-		$this->api_key = $apikey;
-		$this->dc      = substr( $apikey, strpos( $apikey, '-' ) + 1 );;
-		$this->url = "https://{$this->dc}.api.mailchimp.com/{$this->version}/";
+		$this->set_apikey( $apikey );
 	}
-	
-	/**
-	 * @return Mailchimp_API
-	 */
+
 	public static function get_instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
-		
 		return self::$instance;
 	}
-	
-	/**
-	 * Get all Lists => Categories => Interest By the API Key
-	 *
-	 * @param bool $sync
-	 *
-	 * @return array|mixed
-	 */
-	public function get_account_subscribe_lists( $sync = false ) {
-		$prefix = AN_MC_Plugin::get_instance()->get_prefix();
-		
-		if ( ! $sync ) {
-			$result = get_option( $prefix . '_account_subscribe_lists' );
+
+	public function set_apikey( $apikey ) {
+		$this->api_key = is_string( $apikey ) ? trim( $apikey ) : '';
+		$this->dc = '';
+		$this->url = '';
+		if ( preg_match( '/^[a-zA-Z0-9]+-(us[0-9]+)$/D', $this->api_key, $matches ) ) {
+			$this->dc = $matches[1];
+			$this->url = 'https://' . $this->dc . '.api.mailchimp.com/' . $this->version . '/';
 		}
-		
-		if ( $sync || empty( $result ) ) {
-			
-			$result = array();
-			
-			$list = $this->get_lists();
-			
-			if ( isset( $list[ 'error' ] ) ) {
-				return $list[ 'error' ];
-			}
-			
-			if ( count( $list ) > 0 ) {
-				$result = $list;
-				
-				foreach ( $list as $key => $list_item ) {
-					$categories = $this->get_interest_categories( $list_item[ 'id' ] );
-					if ( isset( $categories[ 'error' ] ) ) {
-						return $categories;
-					}
-					
-					$result[ $key ][ 'categories' ] = $categories;
-					foreach ( $result[ $key ][ 'categories' ] as $k => $category_item ) {
-						$interests = $this->get_interests( $list_item[ 'id' ], $category_item[ 'id' ] );
-						if ( isset( $interests[ 'error' ] ) ) {
-							return $interests;
-						}
-						
-						$result[ $key ][ 'categories' ][ $k ][ 'interests' ] = $interests;
-					}
-				}
-			}
-			
-			if ( ! empty( $result ) ) {
-				update_option( $prefix . '_account_subscribe_lists', $result );
-			}
-		}
-		
-		return $result;
 	}
-	
-	/**
-	 * Get Mailchimp account lists by username & api_key
-	 *
-	 * @return array|mixed|object|string
-	 */
-	public function get_lists() {
-		
-		$response = wp_remote_request( $this->url . "lists" . "?" . $this->show_all_params, array(
-			'headers'   => array(
-				'Authorization' => 'Basic ' . base64_encode( $this->username . ':' . $this->api_key ),
-			),
-			'sslverify' => false
-		) );
-		
-		// set transient live
-		if ( ! is_wp_error( $response ) ) {
-			$this->HTTP_Code = wp_remote_retrieve_response_code( $response );
-		} else {
+
+	private function reset_errors() {
+		$this->errors = false;
+		$this->HTTP_Code = 0;
+		$this->errorMessage = '';
+	}
+
+	private function error( $message ) {
+		$this->errors = true;
+		$this->errorMessage = $message;
+		return array( 'error' => $message );
+	}
+
+	private function get_errors( $response ) {
+		if ( is_wp_error( $response ) ) {
 			$this->HTTP_Code = $this->default_error_HTTP_Code;
+			return $this->error( $response->get_error_message() );
 		}
-		
-		if ( $this->HTTP_Code == 200 ) {
-			
-			$body = wp_remote_retrieve_body( $response );
-			$body = json_decode( $body, true );
-			
-			if ( isset( $body[ 'lists' ] ) ) {
-				$body = array_map( function ( $item ) {
-					return array( 'id' => $item[ 'id' ], 'title' => $item[ 'name' ] );
-				}, $body[ 'lists' ] );
-			} else {
-				$body = array();
-			}
-		} else {
-			return $this->get_errors( $response );
-		}
-		
-		return $body;
+		$this->HTTP_Code = (int) wp_remote_retrieve_response_code( $response );
+		$body = json_decode( wp_remote_retrieve_body( $response ), true );
+		$message = is_array( $body ) && isset( $body['detail'] ) && is_string( $body['detail'] )
+			? $body['detail'] : __( 'Unable to communicate with Mailchimp.', 'another-mailchimp-widget' );
+		return $this->error( $message );
 	}
-	
-	/**
-	 * Get error request
-	 *
-	 * @param $request
-	 *
-	 * @return array('error' => 'message)
-	 */
-	private function get_errors( $request ) {
-		
-		if ( is_wp_error( $request ) ) {
-			$this->errorMessage = $content = $request->get_error_message();
-		} else {
-			$content            = json_decode( $request[ 'body' ], true );
-			$this->errorMessage = $content = ( isset( $content[ 'detail' ] ) ) ? $content[ 'detail' ] : esc_html__( 'Data format error.', 'another-mailchimp-widget' );
+
+	private function request( $path, $args = array() ) {
+		if ( '' === $this->url ) {
+			return new WP_Error( 'an_mc_invalid_api_key', __( 'Invalid Mailchimp API key', 'another-mailchimp-widget' ) );
 		}
-		
-		return array( 'error' => $content );
-	}
-	
-	/**
-	 * Get MailChimp account categories by list as array('id' => 'id', 'title' => 'title')
-	 *
-	 * @param $list_id
-	 *
-	 * @return array|mixed
-	 */
-	public function get_interest_categories( $list_id ) {
-		
-		$request = wp_remote_get( $this->url . "lists/{$list_id}/interest-categories" . "?" . $this->show_all_params, array(
-			'headers'   => array(
-				'Authorization' => 'Basic ' . base64_encode( $this->username . ':' . $this->api_key ),
-			),
-			'sslverify' => false
-		) );
-		
-		if ( wp_remote_retrieve_response_code( $request ) == 200 ) {
-			
-			$body = wp_remote_retrieve_body( $request );
-			
-			$body = json_decode( $body, true );
-			
-			if ( isset( $body[ 'categories' ] ) ) {
-				$body = array_map( function ( $item ) {
-					return array( 'id' => $item[ 'id' ], 'title' => $item[ 'title' ] );
-				}, $body[ 'categories' ] );
-			} else {
-				$body = array();
-			}
-		} else {
-			return $this->get_errors( $request );
-		}
-		
-		return $body;
-	}
-	
-	/**
-	 * Get list interests
-	 *
-	 * @param $list_id
-	 * @param $category_id
-	 *
-	 * @return array|mixed
-	 */
-	public function get_interests( $list_id, $category_id ) {
-		
-		$request = wp_remote_get( $this->url . "lists/{$list_id}/interest-categories/{$category_id}/interests" . "?" . $this->show_all_params, array(
-			'headers'   => array(
-				'Authorization' => 'Basic ' . base64_encode( $this->username . ':' . $this->api_key ),
-			),
-			'sslverify' => false
-		) );
-		
-		if ( wp_remote_retrieve_response_code( $request ) == 200 ) {
-			$body = wp_remote_retrieve_body( $request );
-			$body = json_decode( $body, true );
-			
-			if ( isset( $body[ 'interests' ] ) ) {
-				$body = array_map( function ( $item ) {
-					return array( 'id' => $item[ 'id' ], 'title' => $item[ 'name' ] );
-				}, $body[ 'interests' ] );
-			} else {
-				$body = array();
-			}
-		} else {
-			return $this->get_errors( $request );
-		}
-		
-		return $body;
-	}
-	
-	/**
-	 * Get response message
-	 *
-	 * @return mixed|string
-	 */
-	public function get_response_message() {
-		$default_message = esc_html__( 'Invalid Mailchimp API key', 'another-mailchimp-widget' );
-		
-		$messages = array(
-			'104' => esc_html__( 'Invalid Mailchimp API key', 'another-mailchimp-widget' ),
-			'106' => esc_html__( 'Invalid Mailchimp API key', 'another-mailchimp-widget' ),
-			'401' => $this->errorMessage,
-			'403' => $this->errorMessage,
-			'503' => esc_html__( 'Invalid Mailchimp API key', 'another-mailchimp-widget' ),
-		
+		$args = array_merge( array(
+			'timeout' => 15,
+			'redirection' => 0,
+			'sslverify' => true,
+		), $args );
+		$args['headers'] = array(
+			'Authorization' => 'Basic ' . base64_encode( $this->username . ':' . $this->api_key ),
+			'Content-Type' => 'application/json',
 		);
-		
-		if ( isset( $messages[ $this->HTTP_Code ] ) ) {
-			$message = $messages[ $this->HTTP_Code ];
-		}
-		
-		return empty( $message ) ? $default_message : $message;
+		return wp_remote_request( $this->url . $path, $args );
 	}
-	
-	/**
-	 * Add new member to the list
-	 *
-	 * @param $email
-	 * @param $settings   array( list_id => array ( 0 => array(  ) ) )
-	 *
-	 * @return array|bool|mixed
-	 */
-	public function add_to_list( $email, $settings ) {
-		
-		$this->init_options( $settings );
-		$email    = sanitize_email( $email );
-		$lists    = $settings[ 'list_ids' ];
-		$status   = ( isset( $settings[ 'send_confirm' ] ) && $settings[ 'send_confirm' ] ) ? 'pending' :
-			apply_filters('an_mc_default_subscription_status', 'subscribed');
-		$response = array();
-		
-		if ( $email ) {
-			
-			foreach ( $lists as $list_id => $interests ) {
-				
-				// basic request params
-				$data = array(
-					'email_address' => $email,
-					'status'        => $status,
-				);
-				
-				// add / remove interests
-				if ( is_array( $interests ) && ! empty( $interests ) ) {
-					$interests = array_map( function ( $item ) {
-						return $item == "true";
-					}, (array) $interests );
-					
-				}
-				
-				// add fields to request if exists
-				if ( ! empty( $settings[ 'merge_fields' ] ) ) {
-					$data[ 'merge_fields' ] = $settings[ 'merge_fields' ];
-				}
-				
-				if ( ( isset( $interests[ 0 ] ) && ( $interests[ 0 ] == false ) || empty( $interests ) ) ) {
-					$body = json_encode( $data );
-				} else {
-					$data[ 'interests' ] = $interests;
-					$body                = json_encode( $data );
-				}
-				
-				$response = $this->put_user_to_list( $email, $list_id, $body, $response );
+
+	/** Read every page; never return partial collections after an error. */
+	private function collection( $path, $key, $title_key ) {
+		$this->reset_errors();
+		$offset = 0;
+		$items = array();
+		do {
+			$response = $this->request( $path . '?count=100&offset=' . $offset );
+			if ( is_wp_error( $response ) || 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
+				return $this->get_errors( $response );
 			}
-		}
-		
-		$body = array();
-		if ( is_array( $response ) ) {
-			
-			$this->check_response( $response[ 0 ] );
-			
-			foreach ( $response as $key => $response_item ) {
-				if ( is_wp_error( $response_item ) ) {
-					$body[ $key ][ 'response' ] = $response_item->get_error_message();
-					$body[ $key ][ 'body' ]     = $response_item->get_error_code();
-				} else {
-					$body[ $key ][ 'response' ] = isset( $response_item[ 'response' ] ) ? $response_item[ 'response' ] : esc_html__( 'Unable to subscribe user.', 'another-mailchimp-widget' );
-					$body[ $key ][ 'body' ]     = isset( $response_item[ 'body' ] ) ? $response_item[ 'body' ] : '';
-				}
+			$this->HTTP_Code = 200;
+			$body = json_decode( wp_remote_retrieve_body( $response ), true );
+			if ( ! is_array( $body ) || ! isset( $body[ $key ] ) || ! is_array( $body[ $key ] ) ) {
+				return $this->error( __( 'Data format error.', 'another-mailchimp-widget' ) );
 			}
-		}
-		
-		return $body;
+			if ( isset( $body['total_items'] ) && ( ! is_int( $body['total_items'] ) || $body['total_items'] < 0 ) ) {
+				return $this->error( __( 'Data format error.', 'another-mailchimp-widget' ) );
+			}
+			$page = $body[ $key ];
+			foreach ( $page as $item ) {
+				if ( ! is_array( $item ) || ! isset( $item['id'], $item[ $title_key ] )
+					|| ! is_string( $item['id'] ) || ! is_string( $item[ $title_key ] ) ) {
+					return $this->error( __( 'Data format error.', 'another-mailchimp-widget' ) );
+				}
+				// Also detects a server repeating a page instead of advancing the offset.
+				if ( isset( $items[ $item['id'] ] ) ) {
+					return $this->error( __( 'Data format error.', 'another-mailchimp-widget' ) );
+				}
+				$items[ $item['id'] ] = array( 'id' => $item['id'], 'title' => $item[ $title_key ] );
+			}
+			$count = count( $page );
+			$offset += $count;
+			$total = isset( $body['total_items'] ) && is_int( $body['total_items'] ) ? $body['total_items'] : null;
+			if ( 0 === $count && null !== $total && $offset < $total ) {
+				return $this->error( __( 'Data format error.', 'another-mailchimp-widget' ) );
+			}
+		} while ( null !== $total ? $offset < $total : 100 === $count );
+		return array_values( $items );
 	}
-	
-	/**
-	 * Init options
-	 *
-	 * @param $mailChimp_settings
-	 *
-	 * @return $this
-	 */
-	public function init_options( $mailChimp_settings ) {
-		$this->set_apikey( $mailChimp_settings[ 'apikey' ] );
-		$this->username = $mailChimp_settings[ 'user_name' ];
-		
+
+	public function get_lists() {
+		return $this->collection( 'lists', 'lists', 'name' );
+	}
+
+	private function identifier( $value ) {
+		return ( is_string( $value ) || is_int( $value ) ) && preg_match( '/^[a-zA-Z0-9_-]+$/D', (string) $value );
+	}
+
+	public function get_interest_categories( $list_id ) {
+		if ( ! $this->identifier( $list_id ) ) {
+			return $this->error( __( 'Invalid mailing list.', 'another-mailchimp-widget' ) );
+		}
+		return $this->collection( 'lists/' . rawurlencode( $list_id ) . '/interest-categories', 'categories', 'title' );
+	}
+
+	public function get_interests( $list_id, $category_id ) {
+		if ( ! $this->identifier( $list_id ) || ! $this->identifier( $category_id ) ) {
+			return $this->error( __( 'Invalid mailing list.', 'another-mailchimp-widget' ) );
+		}
+		return $this->collection( 'lists/' . rawurlencode( $list_id ) . '/interest-categories/' . rawurlencode( $category_id ) . '/interests', 'interests', 'name' );
+	}
+
+	public function get_account_subscribe_lists( $sync = false ) {
+		$option = AN_MC_Plugin::get_instance()->get_prefix() . '_account_subscribe_lists';
+		$key_option = $option . '_key';
+		$fingerprint = hash( 'sha256', $this->api_key );
+		$cached = get_option( $option );
+		if ( ! $sync && $fingerprint === get_option( $key_option ) && is_array( $cached ) && ! isset( $cached['error'] ) ) {
+			$this->reset_errors();
+			return $cached;
+		}
+		$lists = $this->get_lists();
+		if ( isset( $lists['error'] ) ) {
+			return $lists;
+		}
+		foreach ( $lists as &$list ) {
+			$categories = $this->get_interest_categories( $list['id'] );
+			if ( isset( $categories['error'] ) ) {
+				return $categories;
+			}
+			foreach ( $categories as &$category ) {
+				$interests = $this->get_interests( $list['id'], $category['id'] );
+				if ( isset( $interests['error'] ) ) {
+					return $interests;
+				}
+				$category['interests'] = $interests;
+			}
+			unset( $category );
+			$list['categories'] = $categories;
+		}
+		unset( $list );
+		update_option( $option, $lists, false );
+		update_option( $key_option, $fingerprint, false );
+		return $lists;
+	}
+
+	public function get_response_message() {
+		return $this->errorMessage ?: __( 'Invalid Mailchimp API key', 'another-mailchimp-widget' );
+	}
+
+	public function init_options( $settings ) {
+		$settings = is_array( $settings ) ? $settings : array();
+		$this->set_apikey( isset( $settings['apikey'] ) ? $settings['apikey'] : '' );
+		$this->username = isset( $settings['user_name'] ) && is_string( $settings['user_name'] ) ? $settings['user_name'] : '';
 		return $this;
 	}
-	
-	/**
-	 * Set $apiKey
-	 *
-	 * @param $apiKey
-	 */
-	public function set_apikey( $apiKey ) {
-		$this->api_key = $apiKey;
-		$this->dc      = substr( $apiKey, strpos( $apiKey, '-' ) + 1 );
-		$this->url     = "https://{$this->dc}.api.mailchimp.com/{$this->version}/";
+
+	public function add_to_list( $email, $settings ) {
+		$this->reset_errors();
+		$this->init_options( $settings );
+		if ( ! is_string( $email ) || ! is_email( $email ) || ! is_array( $settings )
+			|| empty( $settings['list_ids'] ) || ! is_array( $settings['list_ids'] ) || '' === $this->url ) {
+			$this->error( __( 'Unable to subscribe user.', 'another-mailchimp-widget' ) );
+			return array();
+		}
+		$status = ! empty( $settings['send_confirm'] ) ? 'pending' : apply_filters( 'an_mc_default_subscription_status', 'subscribed' );
+		if ( ! is_string( $status ) || ! in_array( $status, array( 'subscribed', 'pending', 'unsubscribed', 'cleaned', 'transactional' ), true ) ) {
+			$this->error( __( 'Invalid subscription status.', 'another-mailchimp-widget' ) );
+			return array();
+		}
+		$bodies = array();
+		foreach ( $settings['list_ids'] as $list_id => $interests ) {
+			if ( ! $this->identifier( $list_id ) || ! is_array( $interests ) ) {
+				$this->error( __( 'Invalid mailing list.', 'another-mailchimp-widget' ) );
+				return array();
+			}
+			$data = array( 'email_address' => $email, 'status' => $status );
+			if ( ! empty( $settings['merge_fields'] ) ) {
+				if ( ! is_array( $settings['merge_fields'] ) ) {
+					$this->error( __( 'Data format error.', 'another-mailchimp-widget' ) );
+					return array();
+				}
+				$data['merge_fields'] = $settings['merge_fields'];
+			}
+			if ( $interests ) {
+				$data['interests'] = array();
+				foreach ( $interests as $interest_id => $enabled ) {
+					if ( ! $this->identifier( $interest_id ) || ! is_scalar( $enabled ) ) {
+						$this->error( __( 'Invalid mailing list.', 'another-mailchimp-widget' ) );
+						return array();
+					}
+					$data['interests'][ $interest_id ] = filter_var( $enabled, FILTER_VALIDATE_BOOLEAN );
+				}
+			}
+			$body = wp_json_encode( $data );
+			if ( false === $body ) {
+				$this->error( __( 'Data format error.', 'another-mailchimp-widget' ) );
+				return array();
+			}
+			$bodies[ $list_id ] = $body;
+		}
+		$responses = array();
+		foreach ( $bodies as $list_id => $body ) {
+			$responses = $this->put_user_to_list( $email, $list_id, $body, $responses );
+		}
+		if ( empty( $responses ) ) {
+			$this->error( __( 'Unable to subscribe user.', 'another-mailchimp-widget' ) );
+		}
+		$result = array();
+		foreach ( $responses as $response ) {
+			$this->check_response( $response );
+			$result[] = is_wp_error( $response )
+				? array( 'response' => $response->get_error_message(), 'body' => $response->get_error_code() )
+				: array( 'response' => isset( $response['response'] ) ? $response['response'] : array(), 'body' => wp_remote_retrieve_body( $response ) );
+		}
+		return $result;
 	}
-	
-	/**
-	 * Put user to list
-	 *
-	 * @param $email
-	 * @param $list_id
-	 * @param $body
-	 * @param $response
-	 *
-	 * @return array
-	 */
+
 	protected function put_user_to_list( $email, $list_id, $body, $response ) {
-		$response[] = wp_remote_post( $this->url . "lists/{$list_id}/members/{$this->member_hash($email)}", array(
-			'headers'   => array(
-				'Authorization' => 'Basic ' . base64_encode( $this->username . ':' . $this->api_key ),
-			),
-			'body'      => $body,
-			'method'    => 'PUT',
-			'sslverify' => false
-		) );
-		
+		$response[] = $this->request( 'lists/' . rawurlencode( (string) $list_id ) . '/members/' . $this->member_hash( $email ), array( 'method' => 'PUT', 'body' => $body ) );
 		return $response;
 	}
-	
-	/**
-	 * Member hash
-	 *
-	 * @param $email
-	 *
-	 * @return string
-	 */
+
 	private function member_hash( $email ) {
 		return md5( strtolower( $email ) );
 	}
-	
-	/**
-	 * Check response
-	 *
-	 * @param $response
-	 */
+
 	protected function check_response( $response ) {
-		if ( is_wp_error( $response ) ) {
-			$this->HTTP_Code = $this->default_error_HTTP_Code;
-		} else {
-			$this->HTTP_Code    = wp_remote_retrieve_response_code( $response );
-			$this->errorMessage = wp_remote_retrieve_response_message( $response );
-			
+		$code = (int) wp_remote_retrieve_response_code( $response );
+		if ( is_wp_error( $response ) || $code < 200 || $code >= 300 ) {
+			$this->get_errors( $response );
+			return;
 		}
-		$this->errors = ( $this->HTTP_Code !== 200 ) ? true : false;
+		$body = json_decode( wp_remote_retrieve_body( $response ), true );
+		if ( ! is_array( $body ) || ! isset( $body['id'] ) || ! is_string( $body['id'] ) ) {
+			$this->error( __( 'Data format error.', 'another-mailchimp-widget' ) );
+			return;
+		}
+		if ( ! $this->errors ) {
+			$this->HTTP_Code = $code;
+		}
 	}
 }
